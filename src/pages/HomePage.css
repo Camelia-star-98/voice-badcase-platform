@@ -1,0 +1,50 @@
+.home-page {
+  animation: fadeIn 0.5s ease-in;
+}
+
+.home-page h1 {
+  color: #1890ff;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.home-page .ant-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.home-page .ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.home-page ul {
+  padding-left: 20px;
+}
+
+.home-page li {
+  margin: 8px 0;
+  line-height: 1.8;
+}
+
+.home-page ol {
+  padding-left: 20px;
+}
+
+.home-page ol li {
+  margin: 12px 0;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

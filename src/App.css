@@ -1,0 +1,38 @@
+.ant-layout-header {
+  height: 64px;
+  line-height: 64px;
+}
+
+.ant-table-wrapper {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.audio-player-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.audio-play-btn {
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.audio-play-btn:hover {
+  transform: scale(1.1);
+}
+
+.expandable-text {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expandable-text.expanded {
+  white-space: normal;
+  word-break: break-word;
+}
+

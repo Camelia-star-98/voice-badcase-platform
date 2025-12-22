@@ -1,0 +1,28 @@
+.data-visualization-page {
+  animation: fadeIn 0.5s ease-in;
+}
+
+.data-visualization-page .filter-section {
+  margin-bottom: 16px;
+}
+
+.data-visualization-page .ant-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.data-visualization-page .ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

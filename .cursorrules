@@ -1,0 +1,62 @@
+# 语音Badcase流转平台 - 项目规范
+
+## 项目信息
+- 项目名称：voice-badcase-platform
+- 技术栈：React + TypeScript + Ant Design + Express + PostgreSQL
+- 项目类型：独立Web应用
+
+## 开发规范
+
+### 代码风格
+- 使用TypeScript编写所有前端代码
+- 使用ES6+ 语法
+- 使用函数式组件和Hooks
+- 遵循Airbnb代码规范
+
+### 命名规范
+- 组件文件：PascalCase (如 BadcaseTable.tsx)
+- 工具函数：camelCase (如 formatDate.ts)
+- 常量：UPPER_SNAKE_CASE (如 API_BASE_URL)
+- CSS类名：kebab-case (如 audio-player-cell)
+
+### 数据库规范
+- 表名：snake_case 复数形式 (如 badcases)
+- 列名：snake_case (如 problem_text)
+- 主键：id
+- 时间戳：created_at, updated_at
+
+### API规范
+- RESTful风格
+- 路径：/api/resource
+- 使用正确的HTTP方法 (GET/POST/PUT/DELETE)
+- 参数化查询防止SQL注入
+
+### Git提交规范
+- feat: 新功能
+- fix: 修复bug
+- docs: 文档更新
+- style: 代码格式
+- refactor: 重构
+- test: 测试
+- chore: 构建/工具
+
+## 项目结构
+```
+src/
+  components/   # React组件
+  services/     # API服务
+  utils/        # 工具函数
+  types/        # TypeScript类型定义
+server/
+  routes/       # API路由
+  models/       # 数据模型
+  middleware/   # 中间件
+```
+
+## 注意事项
+- 前端端口：5173
+- 后端端口：3000
+- 数据库：voice_badcase
+- 所有API请求需要错误处理
+- 敏感信息使用环境变量
+
