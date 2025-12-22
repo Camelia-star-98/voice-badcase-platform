@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>检查 Badcase 数据</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1890ff;
+        }
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #40a9ff;
+        }
+        button.danger {
+            background: #ff4d4f;
+        }
+        button.danger:hover {
+            background: #ff7875;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 500px;
+        }
+        .info {
+            padding: 15px;
+            background: #e6f7ff;
+            border-left: 3px solid #1890ff;
+            margin: 20px 0;
+        }
+        .count {
+            font-size: 24px;
+            font-weight: bold;
+            color: #52c41a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Badcase 数据检查工具</h1>
+        
+        <div class="info">
+            <p><strong>当前存储的 Badcase 数量：</strong> <span class="count" id="count">0</span></p>
+        </div>
+
+        <button onclick="showData()">📋 查看所有数据</button>
+        <button onclick="clearData()" class="danger">🗑️ 清空所有数据</button>
+        <button onclick="location.href='http://localhost:3002'">🔙 返回主页面</button>
+
+        <div id="output"></div>
+    </div>
+
+    <script>
+        function updateCount() {
+            const data = localStorage.getItem('badcaseList');
+            if (data) {
+                try {
+                    const list = JSON.parse(data);
+                    document.getElementById('count').textContent = list.length;
+                } catch (e) {
+                    document.getElementById('count').textContent = '错误';
+                }
+            } else {
+                document.getElementById('count').textContent = '0';
+            }
+        }
+
+        function showData() {
+            const data = localStorage.getItem('badcaseList');
+            const output = document.getElementById('output');
+            
+            if (data) {
+                try {
+                    const list = JSON.parse(data);
+                    output.innerHTML = `
+                        <h2>📊 数据详情（共 ${list.length} 条）</h2>
+                        <pre>${JSON.stringify(list, null, 2)}</pre>
+                    `;
+                } catch (e) {
+                    output.innerHTML = `<p style="color: red;">❌ 数据格式错误: ${e.message}</p>`;
+                }
+            } else {
+                output.innerHTML = '<p style="color: orange;">⚠️ 没有找到任何数据</p>';
+            }
+        }
+
+        function clearData() {
+            if (confirm('确定要清空所有 Badcase 数据吗？此操作不可恢复！')) {
+                localStorage.removeItem('badcaseList');
+                alert('✅ 数据已清空！');
+                updateCount();
+                document.getElementById('output').innerHTML = '';
+            }
+        }
+
+        // 页面加载时更新计数
+        updateCount();
+    </script>
+</body>
+</html>
+

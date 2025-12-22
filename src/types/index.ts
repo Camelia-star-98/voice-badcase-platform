@@ -3,7 +3,9 @@ export interface BadcaseData {
   id: string;
   date: string;
   subject?: string; // 学科
-  cmsId?: string; // CMS课程ID
+  location?: string; // 出现位置：fullTTS（全程TTS做课部分）或 interactive（行课互动部分）
+  fullTtsLessonId?: string; // 全程TTS课节ID（当location为fullTTS时）
+  cmsId?: string; // CMS课程ID 或 CMS课节ID（当location为interactive时）
   reporter?: string; // 问题提报人
   category: string;
   expectedFixDate: string; // 期望修复时间

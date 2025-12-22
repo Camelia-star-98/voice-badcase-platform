@@ -1,19 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Table, Card, Space, Tag, Input, Select, Button, Modal, Descriptions, Form, Upload, message, DatePicker } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { SearchOutlined, EyeOutlined, PlayCircleOutlined, UploadOutlined, CloudUploadOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
-import { mockBadcaseList } from '../api/mockData';
 import { getSubjectList, getModelsBySubject, getSubjectLabel } from '../config/subjectModelMapping';
+import { useBadcase } from '../contexts/BadcaseContext';
 import dayjs from 'dayjs';
+import AudioPlayer from '../components/AudioPlayer';
 import './BadcaseListPage.css';
 
 const { Option } = Select;
 const { TextArea } = Input;
 
 const BadcaseListPage = () => {
-  const [dataSource, setDataSource] = useState<BadcaseData[]>(mockBadcaseList);
+  const { badcaseList, addBadcase } = useBadcase();
+  const [dataSource, setDataSource] = useState<BadcaseData[]>(badcaseList);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -27,6 +29,21 @@ const BadcaseListPage = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
+  const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const [audioPlayerVisible, setAudioPlayerVisible] = useState(false);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState('');
+  const [currentRecordId, setCurrentRecordId] = useState('');
+
+  // 同步 badcaseList 到 dataSource，并按ID降序排列（新到旧）
+  useEffect(() => {
+    const sortedList = [...badcaseList].sort((a, b) => {
+      // 提取ID中的数字部分进行比较（例如：BC0001 -> 1）
+      const numA = parseInt(a.id.replace(/\D/g, ''), 10);
+      const numB = parseInt(b.id.replace(/\D/g, ''), 10);
+      return numB - numA; // 降序：大的ID在前面（新的在前面）
+    });
+    setDataSource(sortedList);
+  }, [badcaseList]);
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -55,43 +72,6 @@ const BadcaseListPage = () => {
       fixed: 'left',
     },
     {
-      title: '提交日期',
-      dataIndex: 'date',
-      key: 'date',
-      width: 120,
-      sorter: (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-    },
-    {
-      title: '学科',
-      dataIndex: 'subject',
-      key: 'subject',
-      width: 100,
-      render: (subject: string) => subject ? getSubjectLabel(subject) : '未分类',
-      filters: getSubjectList().map(s => ({ text: s.label, value: s.value })),
-      onFilter: (value, record) => record.subject === value,
-    },
-    {
-      title: 'CMS课程ID',
-      dataIndex: 'cmsId',
-      key: 'cmsId',
-      width: 120,
-      render: (cmsId: string) => cmsId || '-',
-    },
-    {
-      title: '问题提报人',
-      dataIndex: 'reporter',
-      key: 'reporter',
-      width: 120,
-      render: (reporter: string) => reporter || '未填写',
-    },
-    {
-      title: '问题模型ID',
-      dataIndex: 'modelId',
-      key: 'modelId',
-      width: 150,
-      ellipsis: true,
-    },
-    {
       title: '分类',
       dataIndex: 'category',
       key: 'category',
@@ -108,13 +88,6 @@ const BadcaseListPage = () => {
       onFilter: (value, record) => record.category === value,
     },
     {
-      title: '期望修复时间',
-      dataIndex: 'expectedFixDate',
-      key: 'expectedFixDate',
-      width: 130,
-      sorter: (a, b) => new Date(a.expectedFixDate).getTime() - new Date(b.expectedFixDate).getTime(),
-    },
-    {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
@@ -128,6 +101,67 @@ const BadcaseListPage = () => {
         { text: '待处理', value: 'pending' },
       ],
       onFilter: (value, record) => record.status === value,
+    },
+    {
+      title: '提交日期',
+      dataIndex: 'date',
+      key: 'date',
+      width: 120,
+      sorter: (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    },
+    {
+      title: '学科',
+      dataIndex: 'subject',
+      key: 'subject',
+      width: 100,
+      render: (subject: string) => subject ? getSubjectLabel(subject) : '未分类',
+      filters: getSubjectList().map(s => ({ text: s.label, value: s.value })),
+      onFilter: (value, record) => record.subject === value,
+    },
+    {
+      title: '出现位置',
+      dataIndex: 'location',
+      key: 'location',
+      width: 150,
+      render: (location: string) => {
+        if (location === 'fullTTS') return '全程TTS做课部分';
+        if (location === 'interactive') return '行课互动部分';
+        return '-';
+      },
+    },
+    {
+      title: '课节ID',
+      key: 'lessonId',
+      width: 150,
+      render: (_, record) => {
+        if (record.location === 'fullTTS') {
+          return record.fullTtsLessonId || '-';
+        } else if (record.location === 'interactive') {
+          return record.cmsId || '-';
+        }
+        return '-';
+      },
+    },
+    {
+      title: '问题提报人',
+      dataIndex: 'reporter',
+      key: 'reporter',
+      width: 120,
+      render: (reporter: string) => reporter || '未填写',
+    },
+    {
+      title: '问题模型ID',
+      dataIndex: 'modelId',
+      key: 'modelId',
+      width: 150,
+      ellipsis: true,
+    },
+    {
+      title: '期望修复时间',
+      dataIndex: 'expectedFixDate',
+      key: 'expectedFixDate',
+      width: 130,
+      sorter: (a, b) => new Date(a.expectedFixDate).getTime() - new Date(b.expectedFixDate).getTime(),
     },
     {
       title: '描述',
@@ -170,19 +204,18 @@ const BadcaseListPage = () => {
 
   const handlePlayAudio = (record: BadcaseData) => {
     if (record.audioUrl) {
-      // 播放音频的逻辑
-      console.log('播放音频:', record.audioUrl);
-      Modal.info({
-        title: '音频播放',
-        content: `正在播放: ${record.id} 的音频文件`,
-      });
+      setCurrentAudioUrl(record.audioUrl);
+      setCurrentRecordId(record.id);
+      setAudioPlayerVisible(true);
+    } else {
+      message.warning('该记录没有上传音频文件');
     }
   };
 
   const handleSearch = () => {
     setLoading(true);
     setTimeout(() => {
-      let filtered = [...mockBadcaseList];
+      let filtered = [...badcaseList];
 
       if (searchText) {
         filtered = filtered.filter(
@@ -204,6 +237,13 @@ const BadcaseListPage = () => {
         filtered = filtered.filter((item) => item.subject === subjectFilter);
       }
 
+      // 按ID降序排列（新到旧）
+      filtered.sort((a, b) => {
+        const numA = parseInt(a.id.replace(/\D/g, ''), 10);
+        const numB = parseInt(b.id.replace(/\D/g, ''), 10);
+        return numB - numA;
+      });
+
       setDataSource(filtered);
       setLoading(false);
     }, 500);
@@ -214,7 +254,13 @@ const BadcaseListPage = () => {
     setCategoryFilter('all');
     setStatusFilter('all');
     setSubjectFilter('all');
-    setDataSource(mockBadcaseList);
+    // 按ID降序排列（新到旧）
+    const sortedList = [...badcaseList].sort((a, b) => {
+      const numA = parseInt(a.id.replace(/\D/g, ''), 10);
+      const numB = parseInt(b.id.replace(/\D/g, ''), 10);
+      return numB - numA;
+    });
+    setDataSource(sortedList);
   };
 
   const handleOpenUploadModal = () => {
@@ -223,6 +269,7 @@ const BadcaseListPage = () => {
     setAudioFileList([]);
     setSelectedSubject('');
     setAvailableModels([]);
+    setSelectedLocation('');
   };
 
   // 处理学科选择变化
@@ -239,7 +286,7 @@ const BadcaseListPage = () => {
       const values = await uploadForm.validateFields();
       
       // 生成新的ID
-      const newId = `BC${(dataSource.length + 1).toString().padStart(4, '0')}`;
+      const newId = `BC${(badcaseList.length + 1).toString().padStart(4, '0')}`;
       
       // 处理分类：如果选择"其他"，使用具体填写的内容
       let finalCategory = values.category;
@@ -250,26 +297,46 @@ const BadcaseListPage = () => {
       // 获取当前日期作为提交日期
       const currentDate = dayjs().format('YYYY-MM-DD');
       
+      // 将音频文件转换为 Base64
+      let audioUrl: string | undefined = undefined;
+      if (audioFileList.length > 0 && audioFileList[0].originFileObj) {
+        try {
+          const file = audioFileList[0].originFileObj as File;
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          audioUrl = base64;
+          console.log('✅ 音频文件已转换为 Base64，大小:', Math.round(base64.length / 1024), 'KB');
+        } catch (error) {
+          console.error('❌ 音频文件转换失败:', error);
+          message.warning('音频文件处理失败，将跳过音频上传');
+        }
+      }
+      
       // 创建新的Badcase记录
       const newBadcase: BadcaseData = {
         id: newId,
         date: currentDate, // 使用当前日期作为提交日期
         subject: values.subject, // 保存学科
-        cmsId: values.cmsId, // 保存CMS课程ID
+        location: values.location, // 保存出现位置
+        fullTtsLessonId: values.location === 'fullTTS' ? values.fullTtsLessonId : undefined, // 全程TTS课节ID
+        cmsId: values.location === 'interactive' ? values.cmsId : undefined, // CMS课节ID
         reporter: values.reporter, // 保存问题提报人
         category: finalCategory,
         expectedFixDate: values.expectedFixDate.format('YYYY-MM-DD'),
         status: 'pending',
         description: values.description,
-        audioUrl: audioFileList.length > 0 ? URL.createObjectURL(audioFileList[0].originFileObj as File) : undefined,
-        modelId: values.modelId, // 保存问题模型ID
+        audioUrl: audioUrl,
+        modelId: values.location === 'interactive' ? values.modelId : undefined, // 只在行课互动时保存问题模型ID
         createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
         updatedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
       };
 
-      // 添加到数据源
-      const newDataSource = [newBadcase, ...dataSource];
-      setDataSource(newDataSource);
+      // 使用 Context 添加数据
+      addBadcase(newBadcase);
       
       message.success('Badcase上传成功！');
       setUploadModalVisible(false);
@@ -278,6 +345,7 @@ const BadcaseListPage = () => {
       setSelectedCategory('');
       setSelectedSubject('');
       setAvailableModels([]);
+      setSelectedLocation('');
     } catch (error) {
       console.error('表单验证失败:', error);
     }
@@ -414,15 +482,31 @@ const BadcaseListPage = () => {
             <Descriptions.Item label="学科" span={2}>
               {selectedRecord.subject ? getSubjectLabel(selectedRecord.subject) : '未分类'}
             </Descriptions.Item>
-            <Descriptions.Item label="CMS课程ID" span={2}>
-              {selectedRecord.cmsId || '未填写'}
+            <Descriptions.Item label="出现位置" span={2}>
+              {selectedRecord.location === 'fullTTS' 
+                ? '全程TTS做课部分' 
+                : selectedRecord.location === 'interactive' 
+                ? '行课互动部分' 
+                : '未填写'}
             </Descriptions.Item>
+            {selectedRecord.location === 'fullTTS' && selectedRecord.fullTtsLessonId && (
+              <Descriptions.Item label="全程TTS课节ID" span={2}>
+                {selectedRecord.fullTtsLessonId}
+              </Descriptions.Item>
+            )}
+            {selectedRecord.location === 'interactive' && selectedRecord.cmsId && (
+              <Descriptions.Item label="CMS课节ID" span={2}>
+                {selectedRecord.cmsId}
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="问题提报人" span={2}>
               {selectedRecord.reporter || '未填写'}
             </Descriptions.Item>
-            <Descriptions.Item label="问题模型ID" span={2}>
-              {selectedRecord.modelId || '未填写'}
-            </Descriptions.Item>
+            {selectedRecord.location === 'interactive' && (
+              <Descriptions.Item label="问题模型ID" span={2}>
+                {selectedRecord.modelId || '未填写'}
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="分类">
               {selectedRecord.category}
             </Descriptions.Item>
@@ -474,6 +558,7 @@ const BadcaseListPage = () => {
           setSelectedCategory('');
           setSelectedSubject('');
           setAvailableModels([]);
+          setSelectedLocation('');
         }}
         onOk={handleUploadSubmit}
         width={700}
@@ -503,12 +588,47 @@ const BadcaseListPage = () => {
           </Form.Item>
 
           <Form.Item
-            name="cmsId"
-            label="CMS课程ID"
-            rules={[{ required: false }]}
+            name="location"
+            label="出现位置"
+            rules={[{ required: true, message: '请选择出现位置' }]}
           >
-            <Input placeholder="请输入CMS课程ID" />
+            <Select 
+              placeholder="请选择出现位置"
+              onChange={(value) => {
+                setSelectedLocation(value);
+                // 清空相关ID字段
+                uploadForm.setFieldsValue({ 
+                  fullTtsLessonId: undefined,
+                  cmsId: undefined,
+                  modelId: undefined // 清空问题模型ID
+                });
+              }}
+            >
+              <Option value="fullTTS">全程TTS做课部分</Option>
+              <Option value="interactive">行课互动部分</Option>
+            </Select>
           </Form.Item>
+
+          {/* 根据出现位置显示不同的ID输入框 */}
+          {selectedLocation === 'fullTTS' && (
+            <Form.Item
+              name="fullTtsLessonId"
+              label="全程TTS课节ID"
+              rules={[{ required: true, message: '请输入全程TTS课节ID' }]}
+            >
+              <Input placeholder="请输入全程TTS课节ID" />
+            </Form.Item>
+          )}
+
+          {selectedLocation === 'interactive' && (
+            <Form.Item
+              name="cmsId"
+              label="CMS课节ID"
+              rules={[{ required: true, message: '请输入CMS课节ID' }]}
+            >
+              <Input placeholder="请输入CMS课节ID" />
+            </Form.Item>
+          )}
 
           <Form.Item
             name="reporter"
@@ -518,22 +638,25 @@ const BadcaseListPage = () => {
             <Input placeholder="请输入提报人姓名" />
           </Form.Item>
 
-          <Form.Item
-            name="modelId"
-            label="问题模型ID"
-            rules={[{ required: true, message: '请选择问题模型ID' }]}
-          >
-            <Select 
-              placeholder={selectedSubject ? "请选择问题模型ID" : "请先选择学科"}
-              disabled={!selectedSubject}
+          {/* 只在选择"行课互动部分"时显示问题模型ID */}
+          {selectedLocation === 'interactive' && (
+            <Form.Item
+              name="modelId"
+              label="问题模型ID"
+              rules={[{ required: true, message: '请选择问题模型ID' }]}
             >
-              {availableModels.map(model => (
-                <Option key={model} value={model}>
-                  {model}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+              <Select 
+                placeholder={selectedSubject ? "请选择问题模型ID" : "请先选择学科"}
+                disabled={!selectedSubject}
+              >
+                {availableModels.map(model => (
+                  <Option key={model} value={model}>
+                    {model}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
 
           <Form.Item
             name="category"
@@ -623,6 +746,14 @@ const BadcaseListPage = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* 音频播放器 */}
+      <AudioPlayer
+        visible={audioPlayerVisible}
+        audioUrl={currentAudioUrl}
+        recordId={currentRecordId}
+        onClose={() => setAudioPlayerVisible(false)}
+      />
     </div>
   );
 };

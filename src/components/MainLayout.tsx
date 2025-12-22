@@ -3,7 +3,6 @@ import { Layout, Menu, theme } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   HomeOutlined,
-  BarChartOutlined,
   UnorderedListOutlined,
   SwapOutlined,
 } from '@ant-design/icons';
@@ -23,11 +22,6 @@ const MainLayout = () => {
       key: '/home',
       icon: <HomeOutlined />,
       label: '首页',
-    },
-    {
-      key: '/visualization',
-      icon: <BarChartOutlined />,
-      label: '数据可视化',
     },
     {
       key: '/badcase-list',

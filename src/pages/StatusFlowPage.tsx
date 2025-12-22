@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Table, Card, Space, Tag, Input, Select, Button, Modal, Descriptions, message } from 'antd';
+import { Table, Card, Space, Tag, Input, Select, Button, Modal, Descriptions, message, Popconfirm } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { SearchOutlined, EyeOutlined, PlayCircleOutlined, LockOutlined } from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, PlayCircleOutlined, LockOutlined, DeleteOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
-import { mockBadcaseList } from '../api/mockData';
 import { getSubjectList, getSubjectLabel } from '../config/subjectModelMapping';
+import { useBadcase } from '../contexts/BadcaseContext';
+import AudioPlayer from '../components/AudioPlayer';
 import './BadcaseListPage.css';
 
 const { Option } = Select;
@@ -13,7 +14,8 @@ const CORRECT_PASSWORD = '1222';
 const AUTH_KEY = 'status_flow_auth';
 
 const StatusFlowPage = () => {
-  const [dataSource, setDataSource] = useState<BadcaseData[]>(mockBadcaseList);
+  const { badcaseList, updateBadcase, deleteBadcase } = useBadcase();
+  const [dataSource, setDataSource] = useState<BadcaseData[]>(badcaseList);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -21,6 +23,9 @@ const StatusFlowPage = () => {
   const [selectedRecord, setSelectedRecord] = useState<BadcaseData | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
+  const [audioPlayerVisible, setAudioPlayerVisible] = useState(false);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState('');
+  const [currentRecordId, setCurrentRecordId] = useState('');
   
   // 密码验证相关状态
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -73,20 +78,29 @@ const StatusFlowPage = () => {
     return texts[status as keyof typeof texts] || status;
   };
 
+  // 同步 badcaseList 到 dataSource，并按ID降序排列（新到旧）
+  useEffect(() => {
+    const sortedList = [...badcaseList].sort((a, b) => {
+      // 提取ID中的数字部分进行比较（例如：BC0001 -> 1）
+      const numA = parseInt(a.id.replace(/\D/g, ''), 10);
+      const numB = parseInt(b.id.replace(/\D/g, ''), 10);
+      return numB - numA; // 降序：大的ID在前面（新的在前面）
+    });
+    setDataSource(sortedList);
+  }, [badcaseList]);
+
   // 处理状态变更
   const handleStatusChange = (recordId: string, newStatus: string) => {
-    const updatedDataSource = dataSource.map(item => {
-      if (item.id === recordId) {
-        return {
-          ...item,
-          status: newStatus as 'pending' | 'processing' | 'resolved',
-          updatedAt: new Date().toLocaleString('zh-CN'),
-        };
-      }
-      return item;
+    updateBadcase(recordId, {
+      status: newStatus as 'pending' | 'processing' | 'resolved',
     });
-    setDataSource(updatedDataSource);
     message.success('状态更新成功');
+  };
+
+  // 处理删除
+  const handleDelete = (recordId: string) => {
+    deleteBadcase(recordId);
+    message.success('删除成功');
   };
 
   const columns: ColumnsType<BadcaseData> = [
@@ -114,11 +128,28 @@ const StatusFlowPage = () => {
       onFilter: (value, record) => record.subject === value,
     },
     {
-      title: 'CMS课程ID',
-      dataIndex: 'cmsId',
-      key: 'cmsId',
-      width: 120,
-      render: (cmsId: string) => cmsId || '-',
+      title: '出现位置',
+      dataIndex: 'location',
+      key: 'location',
+      width: 150,
+      render: (location: string) => {
+        if (location === 'fullTTS') return '全程TTS做课部分';
+        if (location === 'interactive') return '行课互动部分';
+        return '-';
+      },
+    },
+    {
+      title: '课节ID',
+      key: 'lessonId',
+      width: 150,
+      render: (_, record) => {
+        if (record.location === 'fullTTS') {
+          return record.fullTtsLessonId || '-';
+        } else if (record.location === 'interactive') {
+          return record.cmsId || '-';
+        }
+        return '-';
+      },
     },
     {
       title: '问题提报人',
@@ -126,13 +157,6 @@ const StatusFlowPage = () => {
       key: 'reporter',
       width: 120,
       render: (reporter: string) => reporter || '未填写',
-    },
-    {
-      title: '问题模型ID',
-      dataIndex: 'modelId',
-      key: 'modelId',
-      width: 150,
-      ellipsis: true,
     },
     {
       title: '分类',
@@ -202,7 +226,7 @@ const StatusFlowPage = () => {
     {
       title: '操作',
       key: 'action',
-      width: 180,
+      width: 220,
       fixed: 'right',
       render: (_, record) => (
         <Space size="small">
@@ -222,6 +246,22 @@ const StatusFlowPage = () => {
               播放
             </Button>
           )}
+          <Popconfirm
+            title="确认删除"
+            description="确定要删除这条记录吗？此操作不可恢复。"
+            onConfirm={() => handleDelete(record.id)}
+            okText="确认"
+            cancelText="取消"
+            okButtonProps={{ danger: true }}
+          >
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+            >
+              删除
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -234,19 +274,18 @@ const StatusFlowPage = () => {
 
   const handlePlayAudio = (record: BadcaseData) => {
     if (record.audioUrl) {
-      // 播放音频的逻辑
-      console.log('播放音频:', record.audioUrl);
-      Modal.info({
-        title: '音频播放',
-        content: `正在播放: ${record.id} 的音频文件`,
-      });
+      setCurrentAudioUrl(record.audioUrl);
+      setCurrentRecordId(record.id);
+      setAudioPlayerVisible(true);
+    } else {
+      message.warning('该记录没有上传音频文件');
     }
   };
 
   const handleSearch = () => {
     setLoading(true);
     setTimeout(() => {
-      let filtered = [...mockBadcaseList];
+      let filtered = [...badcaseList];
 
       if (searchText) {
         filtered = filtered.filter(
@@ -268,6 +307,13 @@ const StatusFlowPage = () => {
         filtered = filtered.filter((item) => item.subject === subjectFilter);
       }
 
+      // 按ID降序排列（新到旧）
+      filtered.sort((a, b) => {
+        const numA = parseInt(a.id.replace(/\D/g, ''), 10);
+        const numB = parseInt(b.id.replace(/\D/g, ''), 10);
+        return numB - numA;
+      });
+
       setDataSource(filtered);
       setLoading(false);
     }, 500);
@@ -278,7 +324,13 @@ const StatusFlowPage = () => {
     setCategoryFilter('all');
     setStatusFilter('all');
     setSubjectFilter('all');
-    setDataSource(mockBadcaseList);
+    // 按ID降序排列（新到旧）
+    const sortedList = [...badcaseList].sort((a, b) => {
+      const numA = parseInt(a.id.replace(/\D/g, ''), 10);
+      const numB = parseInt(b.id.replace(/\D/g, ''), 10);
+      return numB - numA;
+    });
+    setDataSource(sortedList);
   };
 
   // 如果未验证，只显示密码输入框
@@ -416,15 +468,31 @@ const StatusFlowPage = () => {
             <Descriptions.Item label="学科" span={2}>
               {selectedRecord.subject ? getSubjectLabel(selectedRecord.subject) : '未分类'}
             </Descriptions.Item>
-            <Descriptions.Item label="CMS课程ID" span={2}>
-              {selectedRecord.cmsId || '未填写'}
+            <Descriptions.Item label="出现位置" span={2}>
+              {selectedRecord.location === 'fullTTS' 
+                ? '全程TTS做课部分' 
+                : selectedRecord.location === 'interactive' 
+                ? '行课互动部分' 
+                : '未填写'}
             </Descriptions.Item>
+            {selectedRecord.location === 'fullTTS' && selectedRecord.fullTtsLessonId && (
+              <Descriptions.Item label="全程TTS课节ID" span={2}>
+                {selectedRecord.fullTtsLessonId}
+              </Descriptions.Item>
+            )}
+            {selectedRecord.location === 'interactive' && selectedRecord.cmsId && (
+              <Descriptions.Item label="CMS课节ID" span={2}>
+                {selectedRecord.cmsId}
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="问题提报人" span={2}>
               {selectedRecord.reporter || '未填写'}
             </Descriptions.Item>
-            <Descriptions.Item label="问题模型ID" span={2}>
-              {selectedRecord.modelId || '未填写'}
-            </Descriptions.Item>
+            {selectedRecord.location === 'interactive' && (
+              <Descriptions.Item label="问题模型ID" span={2}>
+                {selectedRecord.modelId || '未填写'}
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="分类">
               {selectedRecord.category}
             </Descriptions.Item>
@@ -459,6 +527,14 @@ const StatusFlowPage = () => {
           </Descriptions>
         )}
       </Modal>
+
+      {/* 音频播放器 */}
+      <AudioPlayer
+        visible={audioPlayerVisible}
+        audioUrl={currentAudioUrl}
+        recordId={currentRecordId}
+        onClose={() => setAudioPlayerVisible(false)}
+      />
     </div>
   );
 };

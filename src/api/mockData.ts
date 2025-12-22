@@ -58,7 +58,10 @@ const generateMockData = (): BadcaseData[] => {
       expectedFixDate: expectedFixDate.toISOString().split('T')[0],
       status: statuses[Math.floor(Math.random() * statuses.length)],
       description: descriptions[Math.floor(Math.random() * descriptions.length)],
-      audioUrl: Math.random() > 0.3 ? `/audio/sample-${i}.mp3` : undefined,
+      // 使用公共测试音频 URL（实际项目中应替换为真实音频地址）
+      audioUrl: Math.random() > 0.3 
+        ? `https://www2.cs.uic.edu/~i101/SoundFiles/PinkPanther30.wav` 
+        : undefined,
       modelId: modelId,
       createdAt: createdAt.toLocaleString('zh-CN'),
       updatedAt: new Date(
