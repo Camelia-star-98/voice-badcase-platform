@@ -150,7 +150,7 @@ export async function createBadcase(data: Partial<Badcase>): Promise<Badcase> {
       throw error;
     }
 
-    console.log('✅ Badcase 创建成功:', result);
+    console.log('✅ Badcase 创建成功, ID:', result.id);
     return result;
   } catch (error) {
     console.error('创建 Badcase 失败:', error);
@@ -175,7 +175,7 @@ export async function updateBadcase(id: string, data: Partial<Badcase>): Promise
       throw error;
     }
 
-    console.log('✅ Badcase 更新成功:', result);
+    console.log('✅ Badcase 更新成功, ID:', result.id);
     return result;
   } catch (error) {
     console.error('更新 Badcase 失败:', error);

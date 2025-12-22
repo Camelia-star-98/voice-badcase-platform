@@ -309,7 +309,7 @@ const BadcaseListPage = () => {
             reader.readAsDataURL(file);
           });
           audioUrl = base64;
-          console.log('✅ 音频文件已转换为 Base64，大小:', Math.round(base64.length / 1024), 'KB');
+          console.log('✅ 音频文件已成功处理');
         } catch (error) {
           console.error('❌ 音频文件转换失败:', error);
           message.warning('音频文件处理失败，将跳过音频上传');
