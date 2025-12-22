@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realtime 快速测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #ddd;
+        }
+        .status-item.success {
+            border-left-color: #10b981;
+        }
+        .status-item.error {
+            border-left-color: #ef4444;
+        }
+        .status-item.warning {
+            border-left-color: #f59e0b;
+        }
+        .status-label {
+            font-weight: 600;
+            color: #374151;
+        }
+        .status-value {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .status-value.success {
+            color: #10b981;
+            font-weight: 600;
+        }
+        .status-value.error {
+            color: #ef4444;
+            font-weight: 600;
+        }
+        .log-container {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-item {
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+        }
+        .log-item.info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+        }
+        .log-item.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+        }
+        .log-item.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+        }
+        .log-item.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #fbbf24;
+        }
+        .timestamp {
+            opacity: 0.7;
+            margin-right: 8px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .button:active {
+            transform: translateY(0);
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .5;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Realtime 快速测试</h1>
+            <p>验证 Supabase Realtime 是否正常工作</p>
+        </div>
+        
+        <div class="content">
+            <!-- 状态卡片 -->
+            <div class="status-card">
+                <div class="section-title">📊 连接状态</div>
+                <div id="connection-status" class="status-item">
+                    <span class="status-label">连接状态</span>
+                    <span class="status-value">初始化中...</span>
+                </div>
+                <div id="subscription-status" class="status-item">
+                    <span class="status-label">订阅状态</span>
+                    <span class="status-value">未订阅</span>
+                </div>
+                <div id="event-count" class="status-item">
+                    <span class="status-label">接收事件数</span>
+                    <span class="status-value">0</span>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="button-group">
+                <button class="button" onclick="testInsert()">📝 测试新增</button>
+                <button class="button" onclick="clearLogs()">🗑️ 清空日志</button>
+            </div>
+
+            <!-- 日志 -->
+            <div style="margin-top: 30px;">
+                <div class="section-title">📝 实时日志</div>
+                <div class="log-container" id="log-container">
+                    <div class="log-item info">
+                        <span class="timestamp">初始化</span>
+                        等待连接 Supabase...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 从你的项目读取配置
+        const SUPABASE_URL = 'https://bpivzznuvvbafsyvzxqm.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwaXZ6em51dnZiYWZzeXZ6eHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM0MDg1NjIsImV4cCI6MjA0ODk4NDU2Mn0.cXDE2rwda9N9o_eBSZeW10_YuVNCN6BCHc0kcNCuTRw';
+
+        let eventCount = 0;
+        let supabase;
+        let channel;
+
+        // 日志函数
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const timestamp = new Date().toLocaleTimeString('zh-CN');
+            const logItem = document.createElement('div');
+            logItem.className = `log-item ${type}`;
+            logItem.innerHTML = `<span class="timestamp">[${timestamp}]</span>${message}`;
+            logContainer.appendChild(logItem);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // 更新状态
+        function updateStatus(id, text, isSuccess = false) {
+            const element = document.getElementById(id);
+            const valueSpan = element.querySelector('.status-value');
+            valueSpan.textContent = text;
+            valueSpan.className = isSuccess ? 'status-value success' : 'status-value';
+            element.className = isSuccess ? 'status-item success' : 'status-item';
+        }
+
+        // 清空日志
+        function clearLogs() {
+            document.getElementById('log-container').innerHTML = '';
+            log('日志已清空', 'info');
+        }
+
+        // 测试插入数据
+        async function testInsert() {
+            log('🧪 开始测试插入数据...', 'info');
+            try {
+                const testData = {
+                    case_id: `TEST-${Date.now()}`,
+                    status: 'pending',
+                    severity: 'medium',
+                    audio_url: 'https://example.com/test.wav',
+                    transcription: '这是一个测试 badcase',
+                    issue_description: 'Realtime 测试数据',
+                    created_at: new Date().toISOString()
+                };
+
+                const { data, error } = await supabase
+                    .from('badcases')
+                    .insert([testData])
+                    .select();
+
+                if (error) {
+                    log(`❌ 插入失败: ${error.message}`, 'error');
+                    console.error('Insert error:', error);
+                } else {
+                    log(`✅ 插入成功！case_id: ${testData.case_id}`, 'success');
+                    log('💡 如果 Realtime 工作正常，你应该很快看到 INSERT 事件', 'info');
+                }
+            } catch (error) {
+                log(`❌ 错误: ${error.message}`, 'error');
+                console.error('Test insert error:', error);
+            }
+        }
+
+        // 初始化
+        async function init() {
+            try {
+                log('🔧 初始化 Supabase 客户端...', 'info');
+                
+                // 创建 Supabase 客户端
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    realtime: {
+                        params: {
+                            eventsPerSecond: 10
+                        }
+                    }
+                });
+
+                log('✅ Supabase 客户端创建成功', 'success');
+                updateStatus('connection-status', '已连接', true);
+
+                // 订阅 badcases 表
+                log('📡 订阅 badcases 表的 Realtime 事件...', 'info');
+                
+                channel = supabase
+                    .channel('badcases-changes')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: '*',
+                            schema: 'public',
+                            table: 'badcases'
+                        },
+                        (payload) => {
+                            eventCount++;
+                            updateStatus('event-count', eventCount, true);
+                            
+                            const event = payload.eventType;
+                            const caseId = payload.new?.case_id || payload.old?.case_id || '未知';
+                            
+                            log(`🎉 收到 ${event} 事件！case_id: ${caseId}`, 'success');
+                            console.log('Realtime event:', payload);
+                        }
+                    )
+                    .subscribe((status) => {
+                        log(`📊 订阅状态变更: ${status}`, status === 'SUBSCRIBED' ? 'success' : 'warning');
+                        
+                        if (status === 'SUBSCRIBED') {
+                            updateStatus('subscription-status', '已订阅 ✅', true);
+                            log('✅ Realtime 订阅成功！', 'success');
+                            log('💡 现在可以测试插入数据，或在其他窗口操作数据库', 'info');
+                        } else if (status === 'CHANNEL_ERROR') {
+                            updateStatus('subscription-status', '订阅失败 ❌', false);
+                            log('❌ Realtime 订阅失败！请检查：', 'error');
+                            log('1. Supabase 中是否启用了 badcases 表的 Realtime', 'error');
+                            log('2. 数据库连接是否正常', 'error');
+                        }
+                    });
+
+            } catch (error) {
+                log(`❌ 初始化失败: ${error.message}`, 'error');
+                console.error('Init error:', error);
+                updateStatus('connection-status', '连接失败 ❌', false);
+            }
+        }
+
+        // 页面加载后初始化
+        window.addEventListener('load', init);
+
+        // 页面卸载前清理
+        window.addEventListener('beforeunload', () => {
+            if (channel) {
+                channel.unsubscribe();
+            }
+        });
+    </script>
+</body>
+</html>
+

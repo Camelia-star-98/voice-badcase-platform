@@ -23,6 +23,11 @@ const finalKey = supabaseAnonKey || 'placeholder-key';
 export const supabase = createClient(finalUrl, finalKey, {
   auth: {
     persistSession: false
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
   }
 });
 

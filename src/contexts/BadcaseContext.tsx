@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { BadcaseData } from '../types';
 import { mockBadcaseList } from '../api/mockData';
 import * as badcaseApi from '../api/badcaseApi';
+import { supabase } from '../api/supabase';
 
 interface BadcaseContextType {
   badcaseList: BadcaseData[];
@@ -75,6 +76,87 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     initializeData();
   }, []);
+
+  // 🚀 Supabase Realtime 订阅 - 实时同步数据
+  useEffect(() => {
+    if (!useSupabase) {
+      console.log('💾 使用 localStorage 模式，不启用实时订阅');
+      return;
+    }
+
+    console.log('🔔 启动 Supabase Realtime 订阅...');
+
+    // 订阅 badcases 表的所有变化
+    const channel = supabase
+      .channel('badcases-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // 监听所有事件：INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'badcases',
+        },
+        (payload) => {
+          console.log('🔔 收到数据库变化:', payload);
+
+          switch (payload.eventType) {
+            case 'INSERT':
+              // 新增数据
+              const newRecord = payload.new as BadcaseData;
+              console.log('➕ 新增 Badcase:', newRecord.id);
+              setBadcaseList((prev) => {
+                // 检查是否已存在（避免重复）
+                if (prev.some((item) => item.id === newRecord.id)) {
+                  console.log('⚠️ 数据已存在，跳过添加');
+                  return prev;
+                }
+                return [newRecord, ...prev];
+              });
+              break;
+
+            case 'UPDATE':
+              // 更新数据
+              const updatedRecord = payload.new as BadcaseData;
+              console.log('✏️ 更新 Badcase:', updatedRecord.id);
+              setBadcaseList((prev) =>
+                prev.map((item) =>
+                  item.id === updatedRecord.id ? updatedRecord : item
+                )
+              );
+              break;
+
+            case 'DELETE':
+              // 删除数据
+              const deletedRecord = payload.old as BadcaseData;
+              console.log('🗑️ 删除 Badcase:', deletedRecord.id);
+              setBadcaseList((prev) =>
+                prev.filter((item) => item.id !== deletedRecord.id)
+              );
+              break;
+
+            default:
+              console.log('⚠️ 未知的事件类型:', payload.eventType);
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Realtime 订阅成功');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Realtime 订阅失败');
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏱️ Realtime 订阅超时');
+        } else {
+          console.log('📡 Realtime 状态:', status);
+        }
+      });
+
+    // 清理函数：组件卸载时取消订阅
+    return () => {
+      console.log('🔇 取消 Realtime 订阅');
+      supabase.removeChannel(channel);
+    };
+  }, [useSupabase]);
 
   // 当不使用 Supabase 时，保存到 localStorage
   useEffect(() => {
