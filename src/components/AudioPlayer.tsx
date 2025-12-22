@@ -42,7 +42,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ visible, audioUrl, recordId, 
 
       // 监听错误
       audio.addEventListener('error', (e) => {
-        console.error('音频加载错误:', e, '音频URL:', audioUrl);
+        const urlPreview = audioUrl.startsWith('data:') 
+          ? `Base64音频 (${Math.round(audioUrl.length / 1024)}KB)` 
+          : audioUrl;
+        console.error('音频加载错误:', e, '音频类型:', urlPreview);
         const errorMsg = audio.error?.code === 4 
           ? '音频文件不存在或无法访问' 
           : '音频文件加载失败，请检查文件格式或网络连接';
@@ -169,7 +172,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ visible, audioUrl, recordId, 
               textAlign: 'center',
               wordBreak: 'break-all'
             }}>
-              {audioUrl}
+              {audioUrl.startsWith('data:') 
+                ? `Base64 编码音频 (大小: ${Math.round(audioUrl.length / 1024)} KB)` 
+                : audioUrl}
             </div>
           </Space>
         )}
