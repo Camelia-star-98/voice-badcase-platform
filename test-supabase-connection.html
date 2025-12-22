@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase 连接测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #90caf9;
+        }
+        
+        .status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #81c784;
+        }
+        
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+        
+        .status.warning {
+            background: #fff3e0;
+            color: #f57c00;
+            border: 1px solid #ffb74d;
+        }
+        
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .test-result {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .test-result h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 13px;
+        }
+        
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        
+        .test-key {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .test-value {
+            color: #333;
+            font-family: monospace;
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .test-value.success {
+            color: #2e7d32;
+        }
+        
+        .test-value.error {
+            color: #c62828;
+        }
+        
+        .code-block {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Supabase 连接测试</h1>
+        <p class="subtitle">测试数据库连接和环境配置</p>
+        
+        <div id="statusMessage" class="status info">
+            ℹ️ 准备就绪。点击下方按钮开始测试。
+        </div>
+        
+        <div>
+            <button onclick="testConnection()">🔍 测试连接</button>
+            <button onclick="testEnvironment()">⚙️ 检查环境变量</button>
+            <button onclick="testCRUD()">📝 测试增删改查</button>
+            <button onclick="clearLocalStorage()">🗑️ 清除 localStorage</button>
+        </div>
+        
+        <div id="testResult" class="test-result"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        
+        // Supabase 配置
+        const SUPABASE_URL = 'https://bpivzznuvvbafsyvzxqm.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwaXZ6em51dnZiYWZzeXZ6eHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM0MDg1NjIsImV4cCI6MjA0ODk4NDU2Mn0.cXDE2rwda9N9o_eBSZeW10_YuVNCN6BCHc0kcNCuTRw';
+        
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        window.testConnection = async function() {
+            const statusDiv = document.getElementById('statusMessage');
+            const resultDiv = document.getElementById('testResult');
+            
+            statusDiv.className = 'status info';
+            statusDiv.textContent = '🔄 正在连接 Supabase...';
+            resultDiv.style.display = 'none';
+            
+            try {
+                const { data, error, count } = await supabase
+                    .from('badcases')
+                    .select('*', { count: 'exact', head: false });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                statusDiv.className = 'status success';
+                statusDiv.textContent = `✅ 连接成功！数据库中有 ${count} 条记录。`;
+                
+                resultDiv.innerHTML = `
+                    <h3>📊 数据库信息</h3>
+                    <div class="test-item">
+                        <span class="test-key">连接状态</span>
+                        <span class="test-value success">✅ 成功</span>
+                    </div>
+                    <div class="test-item">
+                        <span class="test-key">记录总数</span>
+                        <span class="test-value">${count}</span>
+                    </div>
+                    <div class="test-item">
+                        <span class="test-key">表名</span>
+                        <span class="test-value">badcases</span>
+                    </div>
+                    <div class="test-item">
+                        <span class="test-key">最新记录ID</span>
+                        <span class="test-value">${data && data.length > 0 ? data[0].id : '无数据'}</span>
+                    </div>
+                `;
+                resultDiv.style.display = 'block';
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ 连接失败: ${error.message}`;
+                
+                resultDiv.innerHTML = `
+                    <h3>❌ 错误详情</h3>
+                    <div class="test-item">
+                        <span class="test-key">错误消息</span>
+                        <span class="test-value error">${error.message}</span>
+                    </div>
+                    <div class="test-item">
+                        <span class="test-key">可能原因</span>
+                        <span class="test-value">数据库表不存在或网络连接问题</span>
+                    </div>
+                    <div class="code-block">
+                        ${JSON.stringify(error, null, 2)}
+                    </div>
+                `;
+                resultDiv.style.display = 'block';
+            }
+        };
+        
+        window.testEnvironment = function() {
+            const statusDiv = document.getElementById('statusMessage');
+            const resultDiv = document.getElementById('testResult');
+            
+            const hasViteUrl = typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL;
+            const hasViteKey = typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY;
+            
+            const urlValue = hasViteUrl ? import.meta.env.VITE_SUPABASE_URL : '未配置';
+            const keyValue = hasViteKey ? '已配置 (长度: ' + import.meta.env.VITE_SUPABASE_ANON_KEY.length + ')' : '未配置';
+            
+            if (hasViteUrl && hasViteKey) {
+                statusDiv.className = 'status success';
+                statusDiv.textContent = '✅ 环境变量配置正确！';
+            } else {
+                statusDiv.className = 'status warning';
+                statusDiv.textContent = '⚠️ 环境变量未配置或未加载。';
+            }
+            
+            resultDiv.innerHTML = `
+                <h3>⚙️ 环境变量检查</h3>
+                <div class="test-item">
+                    <span class="test-key">VITE_SUPABASE_URL</span>
+                    <span class="test-value ${hasViteUrl ? 'success' : 'error'}">${urlValue}</span>
+                </div>
+                <div class="test-item">
+                    <span class="test-key">VITE_SUPABASE_ANON_KEY</span>
+                    <span class="test-value ${hasViteKey ? 'success' : 'error'}">${keyValue}</span>
+                </div>
+                <div class="test-item">
+                    <span class="test-key">运行模式</span>
+                    <span class="test-value">${import.meta.env?.MODE || '未知'}</span>
+                </div>
+                <div class="test-item">
+                    <span class="test-key">说明</span>
+                    <span class="test-value">本测试页面使用硬编码的密钥，实际应用会读取环境变量</span>
+                </div>
+            `;
+            resultDiv.style.display = 'block';
+        };
+        
+        window.testCRUD = async function() {
+            const statusDiv = document.getElementById('statusMessage');
+            const resultDiv = document.getElementById('testResult');
+            
+            statusDiv.className = 'status info';
+            statusDiv.textContent = '🔄 正在测试 CRUD 操作...';
+            resultDiv.style.display = 'none';
+            
+            const testId = 'TEST-' + Date.now();
+            const results = [];
+            
+            try {
+                // 1. CREATE
+                const { data: created, error: createError } = await supabase
+                    .from('badcases')
+                    .insert([{
+                        id: testId,
+                        date: new Date().toISOString().split('T')[0],
+                        category: '测试分类',
+                        description: '这是一条测试数据',
+                        expected_fix_date: new Date().toISOString().split('T')[0],
+                        status: 'pending'
+                    }])
+                    .select()
+                    .single();
+                
+                if (createError) throw new Error('CREATE 失败: ' + createError.message);
+                results.push({ operation: 'CREATE', status: '✅ 成功', id: testId });
+                
+                // 2. READ
+                const { data: read, error: readError } = await supabase
+                    .from('badcases')
+                    .select('*')
+                    .eq('id', testId)
+                    .single();
+                
+                if (readError) throw new Error('READ 失败: ' + readError.message);
+                results.push({ operation: 'READ', status: '✅ 成功', id: testId });
+                
+                // 3. UPDATE
+                const { data: updated, error: updateError } = await supabase
+                    .from('badcases')
+                    .update({ description: '测试数据已更新' })
+                    .eq('id', testId)
+                    .select()
+                    .single();
+                
+                if (updateError) throw new Error('UPDATE 失败: ' + updateError.message);
+                results.push({ operation: 'UPDATE', status: '✅ 成功', id: testId });
+                
+                // 4. DELETE
+                const { error: deleteError } = await supabase
+                    .from('badcases')
+                    .delete()
+                    .eq('id', testId);
+                
+                if (deleteError) throw new Error('DELETE 失败: ' + deleteError.message);
+                results.push({ operation: 'DELETE', status: '✅ 成功', id: testId });
+                
+                statusDiv.className = 'status success';
+                statusDiv.textContent = '✅ CRUD 测试全部通过！';
+                
+                resultDiv.innerHTML = `
+                    <h3>📝 CRUD 操作测试结果</h3>
+                    ${results.map(r => `
+                        <div class="test-item">
+                            <span class="test-key">${r.operation}</span>
+                            <span class="test-value success">${r.status}</span>
+                        </div>
+                    `).join('')}
+                    <div class="test-item">
+                        <span class="test-key">测试ID</span>
+                        <span class="test-value">${testId}</span>
+                    </div>
+                `;
+                resultDiv.style.display = 'block';
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ CRUD 测试失败: ${error.message}`;
+                
+                resultDiv.innerHTML = `
+                    <h3>❌ 测试失败</h3>
+                    ${results.map(r => `
+                        <div class="test-item">
+                            <span class="test-key">${r.operation}</span>
+                            <span class="test-value success">${r.status}</span>
+                        </div>
+                    `).join('')}
+                    <div class="test-item">
+                        <span class="test-key">错误消息</span>
+                        <span class="test-value error">${error.message}</span>
+                    </div>
+                `;
+                resultDiv.style.display = 'block';
+                
+                // 尝试清理测试数据
+                try {
+                    await supabase.from('badcases').delete().eq('id', testId);
+                } catch {}
+            }
+        };
+        
+        window.clearLocalStorage = function() {
+            const count = localStorage.length;
+            localStorage.clear();
+            
+            const statusDiv = document.getElementById('statusMessage');
+            const resultDiv = document.getElementById('testResult');
+            
+            statusDiv.className = 'status success';
+            statusDiv.textContent = `✅ 已清除 ${count} 个 localStorage 项目`;
+            
+            resultDiv.innerHTML = `
+                <h3>🗑️ localStorage 已清空</h3>
+                <div class="test-item">
+                    <span class="test-key">清除前项目数</span>
+                    <span class="test-value">${count}</span>
+                </div>
+                <div class="test-item">
+                    <span class="test-key">清除后项目数</span>
+                    <span class="test-value">0</span>
+                </div>
+                <div class="test-item">
+                    <span class="test-key">说明</span>
+                    <span class="test-value">刷新页面将使用 Supabase 数据</span>
+                </div>
+            `;
+            resultDiv.style.display = 'block';
+        };
+        
+        // 页面加载时自动测试连接
+        window.addEventListener('load', () => {
+            setTimeout(testConnection, 500);
+        });
+    </script>
+</body>
+</html>
+
