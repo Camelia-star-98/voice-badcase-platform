@@ -108,14 +108,18 @@ export async function createBadcase(badcase: BadcaseData): Promise<BadcaseData> 
 
     if (error) {
       console.error('❌ 创建 Badcase 失败:', error);
-      throw error;
+      console.error('❌ 错误详情:', JSON.stringify(error, null, 2));
+      console.error('❌ 错误消息:', error.message);
+      throw new Error(error.message || '创建失败');
     }
 
     console.log('✅ Badcase 创建成功:', data.id);
     return mapDbToBadcaseData(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ 创建 Badcase 异常:', error);
-    throw error;
+    console.error('❌ 错误类型:', typeof error);
+    console.error('❌ 错误内容:', JSON.stringify(error, null, 2));
+    throw new Error(error?.message || error?.toString() || '创建 Badcase 失败');
   }
 }
 
@@ -135,14 +139,18 @@ export async function updateBadcase(id: string, updates: Partial<BadcaseData>): 
 
     if (error) {
       console.error('❌ 更新 Badcase 失败:', error);
-      throw error;
+      console.error('❌ 错误详情:', JSON.stringify(error, null, 2));
+      console.error('❌ 错误消息:', error.message);
+      throw new Error(error.message || '更新失败');
     }
 
     console.log('✅ Badcase 更新成功:', data.id);
     return mapDbToBadcaseData(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ 更新 Badcase 异常:', error);
-    throw error;
+    console.error('❌ 错误类型:', typeof error);
+    console.error('❌ 错误内容:', JSON.stringify(error, null, 2));
+    throw new Error(error?.message || error?.toString() || '更新 Badcase 失败');
   }
 }
 
@@ -151,20 +159,28 @@ export async function updateBadcase(id: string, updates: Partial<BadcaseData>): 
  */
 export async function deleteBadcase(id: string): Promise<void> {
   try {
-    const { error } = await supabase
+    console.log('🗑️ 开始删除 Badcase:', id);
+    
+    const { data, error } = await supabase
       .from('badcases')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .select();
 
     if (error) {
       console.error('❌ 删除 Badcase 失败:', error);
-      throw error;
+      console.error('❌ 错误详情:', JSON.stringify(error, null, 2));
+      console.error('❌ 错误消息:', error.message);
+      throw new Error(error.message || '删除失败');
     }
 
     console.log('✅ Badcase 删除成功:', id);
-  } catch (error) {
+    console.log('✅ 删除的数据:', data);
+  } catch (error: any) {
     console.error('❌ 删除 Badcase 异常:', error);
-    throw error;
+    console.error('❌ 错误类型:', typeof error);
+    console.error('❌ 错误内容:', JSON.stringify(error, null, 2));
+    throw new Error(error?.message || error?.toString() || '删除 Badcase 失败');
   }
 }
 

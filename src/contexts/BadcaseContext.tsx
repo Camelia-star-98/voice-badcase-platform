@@ -94,8 +94,10 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
         // 使用 localStorage
         setBadcaseList((prev) => [badcase, ...prev]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 添加 Badcase 失败:', error);
+      console.error('❌ 错误消息:', error?.message);
+      console.error('❌ 错误详情:', JSON.stringify(error, null, 2));
       throw error;
     }
   };
@@ -123,8 +125,10 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
           )
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 更新 Badcase 失败:', error);
+      console.error('❌ 错误消息:', error?.message);
+      console.error('❌ 错误详情:', JSON.stringify(error, null, 2));
       throw error;
     }
   };
@@ -141,8 +145,10 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
         setBadcaseList((prev) => prev.filter((item) => item.id !== id));
         console.log('✅ 已从 localStorage 删除:', id);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 删除 Badcase 失败:', error);
+      console.error('❌ 错误消息:', error?.message);
+      console.error('❌ 错误详情:', JSON.stringify(error, null, 2));
       throw error;
     }
   };

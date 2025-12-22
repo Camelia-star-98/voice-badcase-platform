@@ -98,9 +98,17 @@ const StatusFlowPage = () => {
   };
 
   // 处理删除
-  const handleDelete = (recordId: string) => {
-    deleteBadcase(recordId);
-    message.success('删除成功');
+  const handleDelete = async (recordId: string) => {
+    try {
+      console.log('🗑️ StatusFlowPage: 准备删除 Badcase:', recordId);
+      await deleteBadcase(recordId);
+      console.log('✅ StatusFlowPage: 删除成功:', recordId);
+      message.success('删除成功');
+    } catch (error: any) {
+      console.error('❌ StatusFlowPage: 删除失败:', error);
+      console.error('❌ 错误详情:', error?.message);
+      message.error(error?.message || '删除失败，请重试');
+    }
   };
 
   const columns: ColumnsType<BadcaseData> = [
