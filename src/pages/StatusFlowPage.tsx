@@ -29,7 +29,7 @@ const StatusFlowPage = () => {
   
   // 密码验证相关状态
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(true); // 默认显示密码弹窗
   const [password, setPassword] = useState('');
 
   // 检查是否已经验证过
@@ -37,9 +37,9 @@ const StatusFlowPage = () => {
     const auth = sessionStorage.getItem(AUTH_KEY);
     if (auth === 'true') {
       setIsAuthenticated(true);
-    } else {
-      setPasswordVisible(true);
+      setPasswordVisible(false); // 已验证，关闭密码弹窗
     }
+    // 未验证的情况下，passwordVisible 默认为 true，不需要额外设置
   }, []);
 
   // 处理密码验证
