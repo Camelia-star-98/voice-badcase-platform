@@ -112,6 +112,58 @@ const StatusFlowPage = () => {
       fixed: 'left',
     },
     {
+      title: '分类',
+      dataIndex: 'category',
+      key: 'category',
+      width: 150,
+      filters: [
+        { text: '读音错误', value: '读音错误' },
+        { text: '停顿不当', value: '停顿不当' },
+        { text: '重读不对', value: '重读不对' },
+        { text: '语速突变', value: '语速突变' },
+        { text: '音量突变', value: '音量突变' },
+        { text: '音质问题', value: '音质问题' },
+        { text: '其他', value: '其他' },
+      ],
+      onFilter: (value, record) => record.category === value,
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      width: 180,
+      render: (status: string, record: BadcaseData) => (
+        <Select
+          value={status}
+          onChange={(value) => handleStatusChange(record.id, value)}
+          style={{ width: '100%' }}
+          size="small"
+        >
+          <Option value="pending">
+            <Tag color="default">待处理</Tag>
+          </Option>
+          <Option value="algorithm_processing">
+            <Tag color="processing">算法处理中</Tag>
+          </Option>
+          <Option value="engineering_processing">
+            <Tag color="warning">工程处理中</Tag>
+          </Option>
+          <Option value="resolved">
+            <Tag color="success">已解决</Tag>
+          </Option>
+        </Select>
+      ),
+      filters: [
+        { text: '待处理', value: 'pending' },
+        { text: '算法处理中', value: 'algorithm_processing' },
+        { text: '工程处理中', value: 'engineering_processing' },
+        { text: '已解决', value: 'resolved' },
+        // 兼容旧数据
+        { text: '处理中', value: 'processing' },
+      ],
+      onFilter: (value, record) => record.status === value,
+    },
+    {
       title: '提交日期',
       dataIndex: 'date',
       key: 'date',
@@ -159,63 +211,11 @@ const StatusFlowPage = () => {
       render: (reporter: string) => reporter || '未填写',
     },
     {
-      title: '分类',
-      dataIndex: 'category',
-      key: 'category',
-      width: 150,
-      filters: [
-        { text: '读音错误', value: '读音错误' },
-        { text: '停顿不当', value: '停顿不当' },
-        { text: '重读不对', value: '重读不对' },
-        { text: '语速突变', value: '语速突变' },
-        { text: '音量突变', value: '音量突变' },
-        { text: '音质问题', value: '音质问题' },
-        { text: '其他', value: '其他' },
-      ],
-      onFilter: (value, record) => record.category === value,
-    },
-    {
       title: '期望修复时间',
       dataIndex: 'expectedFixDate',
       key: 'expectedFixDate',
       width: 130,
       sorter: (a, b) => new Date(a.expectedFixDate).getTime() - new Date(b.expectedFixDate).getTime(),
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 180,
-      render: (status: string, record: BadcaseData) => (
-        <Select
-          value={status}
-          onChange={(value) => handleStatusChange(record.id, value)}
-          style={{ width: '100%' }}
-          size="small"
-        >
-          <Option value="pending">
-            <Tag color="default">待处理</Tag>
-          </Option>
-          <Option value="algorithm_processing">
-            <Tag color="processing">算法处理中</Tag>
-          </Option>
-          <Option value="engineering_processing">
-            <Tag color="warning">工程处理中</Tag>
-          </Option>
-          <Option value="resolved">
-            <Tag color="success">已解决</Tag>
-          </Option>
-        </Select>
-      ),
-      filters: [
-        { text: '待处理', value: 'pending' },
-        { text: '算法处理中', value: 'algorithm_processing' },
-        { text: '工程处理中', value: 'engineering_processing' },
-        { text: '已解决', value: 'resolved' },
-        // 兼容旧数据
-        { text: '处理中', value: 'processing' },
-      ],
-      onFilter: (value, record) => record.status === value,
     },
     {
       title: '描述',
