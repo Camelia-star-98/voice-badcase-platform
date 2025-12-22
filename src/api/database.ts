@@ -206,6 +206,29 @@ export async function deleteBadcase(id: string): Promise<void> {
 }
 
 /**
+ * 批量删除 Badcase
+ */
+export async function deleteBadcasesByIds(ids: string[]): Promise<{ success: number; failed: number; errors: Array<{ id: string; error: any }> }> {
+  const results = {
+    success: 0,
+    failed: 0,
+    errors: [] as Array<{ id: string; error: any }>
+  };
+
+  for (const id of ids) {
+    try {
+      await deleteBadcase(id);
+      results.success++;
+    } catch (error) {
+      results.failed++;
+      results.errors.push({ id, error });
+    }
+  }
+
+  return results;
+}
+
+/**
  * 获取统计数据
  */
 export async function getStatistics(): Promise<Statistics> {
