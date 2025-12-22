@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Table, Card, Space, Tag, Input, Select, Button, Modal, Descriptions, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { SearchOutlined, EyeOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, PlayCircleOutlined, LockOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
 import { mockBadcaseList } from '../api/mockData';
 import { getSubjectList, getSubjectLabel } from '../config/subjectModelMapping';
 import './BadcaseListPage.css';
 
 const { Option } = Select;
+
+const CORRECT_PASSWORD = '1222';
+const AUTH_KEY = 'status_flow_auth';
 
 const StatusFlowPage = () => {
   const [dataSource, setDataSource] = useState<BadcaseData[]>(mockBadcaseList);
@@ -18,6 +21,35 @@ const StatusFlowPage = () => {
   const [selectedRecord, setSelectedRecord] = useState<BadcaseData | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
+  
+  // 密码验证相关状态
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [password, setPassword] = useState('');
+
+  // 检查是否已经验证过
+  useEffect(() => {
+    const auth = sessionStorage.getItem(AUTH_KEY);
+    if (auth === 'true') {
+      setIsAuthenticated(true);
+    } else {
+      setPasswordVisible(true);
+    }
+  }, []);
+
+  // 处理密码验证
+  const handlePasswordSubmit = () => {
+    if (password === CORRECT_PASSWORD) {
+      setIsAuthenticated(true);
+      setPasswordVisible(false);
+      sessionStorage.setItem(AUTH_KEY, 'true');
+      message.success('验证成功！');
+      setPassword('');
+    } else {
+      message.error('密码错误，请重试！');
+      setPassword('');
+    }
+  };
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -248,6 +280,44 @@ const StatusFlowPage = () => {
     setSubjectFilter('all');
     setDataSource(mockBadcaseList);
   };
+
+  // 如果未验证，只显示密码输入框
+  if (!isAuthenticated) {
+    return (
+      <Modal
+        title={
+          <Space>
+            <LockOutlined />
+            <span>密码验证</span>
+          </Space>
+        }
+        open={passwordVisible}
+        onOk={handlePasswordSubmit}
+        onCancel={() => {
+          message.warning('需要验证密码才能访问该页面');
+        }}
+        okText="确认"
+        cancelText="取消"
+        closable={false}
+        maskClosable={false}
+      >
+        <div style={{ padding: '20px 0' }}>
+          <p style={{ marginBottom: 16, color: '#666' }}>
+            该页面需要密码验证才能访问
+          </p>
+          <Input.Password
+            prefix={<LockOutlined />}
+            placeholder="请输入访问密码"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onPressEnter={handlePasswordSubmit}
+            size="large"
+            autoFocus
+          />
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <div className="badcase-list-page">
