@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Table, Card, Space, Tag, Input, Select, Button, Modal, Descriptions, Form, Upload, message, DatePicker } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { SearchOutlined, EyeOutlined, PlayCircleOutlined, PlusOutlined, UploadOutlined, CloudUploadOutlined } from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, PlayCircleOutlined, UploadOutlined, CloudUploadOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
 import { mockBadcaseList } from '../api/mockData';
 import { getSubjectList, getModelsBySubject, getSubjectLabel } from '../config/subjectModelMapping';

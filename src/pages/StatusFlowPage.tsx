@@ -4,7 +4,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined, EyeOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
 import { mockBadcaseList } from '../api/mockData';
-import { getSubjectList, getModelsBySubject, getSubjectLabel } from '../config/subjectModelMapping';
+import { getSubjectList, getSubjectLabel } from '../config/subjectModelMapping';
 import './BadcaseListPage.css';
 
 const { Option } = Select;

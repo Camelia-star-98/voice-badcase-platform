@@ -16,8 +16,7 @@ import {
   PlayCircleOutlined,
   PauseCircleOutlined,
   PlusOutlined,
-  SearchOutlined,
-  FilterOutlined
+  SearchOutlined
 } from '@ant-design/icons'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import type { FilterValue, SorterResult } from 'antd/es/table/interface'
@@ -381,7 +380,7 @@ const BadcaseTable: React.FC = () => {
         </Select>
         <RangePicker
           value={dateRange}
-          onChange={setDateRange}
+          onChange={(dates) => setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs] | null)}
           placeholder={['开始日期', '结束日期']}
         />
         <Button
