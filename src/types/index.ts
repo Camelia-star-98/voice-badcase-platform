@@ -13,6 +13,7 @@ export interface BadcaseData {
   description: string;
   audioUrl?: string;
   modelId?: string; // 问题模型ID
+  remark?: string; // 备注信息
   createdAt: string;
   updatedAt: string;
 }

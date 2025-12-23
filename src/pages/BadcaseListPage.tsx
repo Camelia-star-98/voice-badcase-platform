@@ -285,8 +285,10 @@ const BadcaseListPage = () => {
     try {
       const values = await uploadForm.validateFields();
       
-      // 生成新的ID
-      const newId = `BC${(badcaseList.length + 1).toString().padStart(4, '0')}`;
+      // 生成新的ID：使用时间戳 + 随机数确保唯一性
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      const newId = `BC${timestamp}${random}`;
       
       // 处理分类：如果选择"其他"，使用具体填写的内容
       let finalCategory = values.category;
