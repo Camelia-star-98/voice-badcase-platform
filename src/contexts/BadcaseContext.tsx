@@ -79,10 +79,6 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   // 🚀 Supabase Realtime 订阅 - 实时同步数据
   useEffect(() => {
-    // 暂时禁用 Realtime 功能
-    console.log('⏸️ Realtime 订阅已禁用（可在需要时重新启用）');
-    return;
-    
     if (!useSupabase) {
       console.log('💾 使用 localStorage 模式，不启用实时订阅');
       return;
