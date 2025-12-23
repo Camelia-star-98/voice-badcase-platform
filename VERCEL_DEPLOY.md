@@ -193,3 +193,5 @@ vercel env pull .env.vercel
 - [Vercel 环境变量文档](https://vercel.com/docs/concepts/projects/environment-variables)
 - [Vite 环境变量文档](https://vitejs.dev/guide/env-and-mode.html)
 
+
+<!-- Updated: Tue Dec 23 12:27:09 CST 2025 -->
