@@ -285,11 +285,14 @@ const BadcaseListPage = () => {
     try {
       const values = await uploadForm.validateFields();
       
-      // 生成新的ID：使用 UUID 的一部分确保唯一性
+      // 生成新的ID：8位短码（BC + 6位随机字符）
       const generateUniqueId = () => {
-        const timestamp = Date.now().toString(36); // 转换为36进制
-        const randomStr = Math.random().toString(36).substring(2, 10); // 8位随机字符
-        return `BC_${timestamp}_${randomStr}`.toUpperCase();
+        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let id = 'BC';
+        for (let i = 0; i < 6; i++) {
+          id += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return id;
       };
       const newId = generateUniqueId();
       

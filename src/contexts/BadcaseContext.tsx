@@ -107,7 +107,7 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
               setBadcaseList((prev) => {
                 // 检查是否已存在（避免重复）
                 if (prev.some((item) => item.id === newRecord.id)) {
-                  console.log('⚠️ 数据已存在，跳过添加');
+                  console.debug('⚠️ 数据已存在，跳过添加');
                   return prev;
                 }
                 return [newRecord, ...prev];
