@@ -135,7 +135,7 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
               break;
 
             default:
-              console.log('⚠️ 未知的事件类型:', payload.eventType);
+              console.log('⚠️ 未知的事件类型:', payload);
           }
         }
       )
@@ -160,9 +160,10 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   // 当不使用 Supabase 时，保存到 localStorage
   useEffect(() => {
-    if (!loading && !useSupabase && badcaseList.length > 0) {
+    if (!loading && !useSupabase) {
+      // 立即同步到 localStorage（包括空列表）
       localStorage.setItem('badcaseList', JSON.stringify(badcaseList));
-      console.log('💾 数据已保存到 localStorage');
+      console.log(`💾 数据已保存到 localStorage (共 ${badcaseList.length} 条)`);
     }
   }, [badcaseList, useSupabase, loading]);
 
@@ -173,8 +174,15 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
         const created = await badcaseApi.createBadcase(badcase);
         setBadcaseList((prev) => [created, ...prev]);
       } else {
-        // 使用 localStorage
-        setBadcaseList((prev) => [badcase, ...prev]);
+        // 使用 localStorage - 立即同步
+        const updatedList = [badcase, ...badcaseList];
+        
+        // 立即保存到 localStorage
+        localStorage.setItem('badcaseList', JSON.stringify(updatedList));
+        console.log('💾 新增已立即保存到 localStorage:', badcase.id);
+        
+        // 更新状态
+        setBadcaseList(updatedList);
       }
     } catch (error: any) {
       console.error('❌ 添加 Badcase 失败:', error);
@@ -193,19 +201,23 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
           prev.map((item) => (item.id === id ? updated : item))
         );
       } else {
-        // 使用 localStorage
-        setBadcaseList((prev) =>
-          prev.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  ...updates,
-                  updatedAt:
-                    new Date().toLocaleString('zh-CN'),
-                }
-              : item
-          )
+        // 使用 localStorage - 立即同步
+        const updatedList = badcaseList.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                ...updates,
+                updatedAt: new Date().toLocaleString('zh-CN'),
+              }
+            : item
         );
+        
+        // 立即保存到 localStorage
+        localStorage.setItem('badcaseList', JSON.stringify(updatedList));
+        console.log('💾 更新已立即保存到 localStorage:', id);
+        
+        // 更新状态
+        setBadcaseList(updatedList);
       }
     } catch (error: any) {
       console.error('❌ 更新 Badcase 失败:', error);

@@ -40,9 +40,17 @@
 
 ### 2.2 执行数据库初始化脚本
 
-复制项目根目录下的 `database/init_badcases_table.sql` 文件内容，粘贴到 SQL Editor 中，然后点击 **"Run"** 或按 `Cmd+Enter` (Mac) / `Ctrl+Enter` (Windows)。
+按照以下顺序执行 `database/` 目录下的 SQL 脚本：
 
-执行成功后，你应该会看到 "Success. No rows returned" 的提示。
+#### 1. 创建 badcases 表
+
+复制 `database/create_badcases_table.sql` 文件内容，粘贴到 SQL Editor 中，点击 **"Run"**。
+
+#### 2. 启用公共访问（可选）
+
+如果需要匿名访问，复制 `database/enable_public_access.sql` 文件内容并执行。
+
+执行成功后，你应该会看到 "Success" 的提示。
 
 ### 2.3 验证表创建成功
 
@@ -196,18 +204,18 @@ mv .env.local.backup .env.local
 | 字段名 | 类型 | 说明 | 必填 |
 |--------|------|------|------|
 | id | text | 主键，Badcase ID | ✅ |
-| problem_text | text | 问题文本 | ✅ |
+| date | text | 日期 | ✅ |
+| subject | text | 学科 | ✅ |
+| location | text | 位置/章节 | ✅ |
+| full_tts_lesson_id | text | 完整 TTS 课程 ID | ❌ |
+| cms_id | text | CMS ID | ❌ |
+| reporter | text | 报告人 | ❌ |
+| category | text | 分类 | ✅ |
+| expected_fix_date | text | 预期修复日期 | ❌ |
+| status | text | 状态（待修复/修复中/已修复/已验证/已关闭） | ✅ |
+| description | text | 问题描述 | ✅ |
 | audio_url | text | 音频文件 URL | ❌ |
-| problem_description | text | 问题描述 | ✅ |
-| detail_description | text | 详细描述 | ❌ |
-| priority | text | 优先级 (P00/P0/P1/P2) | ✅ |
-| feedback_source | text | 反馈来源 | ❌ |
-| feedback_date | text | 反馈日期 | ❌ |
-| feedback_person | text | 反馈人 | ❌ |
-| creator | text | 创建人 | ❌ |
-| status | text | 状态 | ✅ |
-| subject | text | 学科 | ❌ |
-| model_version | text | 模型版本 | ❌ |
+| model_id | text | 模型 ID | ❌ |
 | created_at | timestamptz | 创建时间 | 自动 |
 | updated_at | timestamptz | 更新时间 | 自动 |
 

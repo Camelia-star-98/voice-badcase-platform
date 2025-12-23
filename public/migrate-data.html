@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数据迁移工具 - localStorage 到 Supabase</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 800px;
+      width: 100%;
+      padding: 40px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .badge.success {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .badge.warning {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .badge.info {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #555;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: #218838;
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #c82333;
+    }
+
+    .info-box {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .info-box p {
+      margin: 5px 0;
+      color: #555;
+      font-size: 14px;
+    }
+
+    .info-box strong {
+      color: #333;
+    }
+
+    .log {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .log-entry {
+      margin-bottom: 5px;
+    }
+
+    .log-success {
+      color: #4ec9b0;
+    }
+
+    .log-error {
+      color: #f48771;
+    }
+
+    .log-warning {
+      color: #dcdcaa;
+    }
+
+    .log-info {
+      color: #569cd6;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📦 数据迁移工具</h1>
+    <p class="subtitle">将 localStorage 数据迁移到 Supabase 数据库</p>
+
+    <!-- Supabase 配置 -->
+    <div class="section">
+      <div class="section-title">
+        🔧 Supabase 配置
+        <span class="badge info">必填</span>
+      </div>
+      
+      <div class="input-group">
+        <label for="supabaseUrl">Supabase URL</label>
+        <input 
+          type="text" 
+          id="supabaseUrl" 
+          placeholder="https://xxx.supabase.co"
+        >
+      </div>
+
+      <div class="input-group">
+        <label for="supabaseKey">Supabase Anon Key</label>
+        <input 
+          type="password" 
+          id="supabaseKey" 
+          placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        >
+      </div>
+
+      <button class="btn btn-primary" onclick="testConnection()">
+        🔌 测试连接
+      </button>
+    </div>
+
+    <!-- 数据统计 -->
+    <div class="section">
+      <div class="section-title">
+        📊 数据统计
+      </div>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-number" id="localCount">0</div>
+          <div class="stat-label">本地数据</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="supabaseCount">-</div>
+          <div class="stat-label">Supabase 数据</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据预览 -->
+    <div class="section">
+      <div class="section-title">
+        👀 本地数据预览
+      </div>
+      <div class="info-box" id="dataPreview">
+        <p>正在读取本地数据...</p>
+      </div>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="section">
+      <div class="section-title">
+        🚀 迁移操作
+      </div>
+      <div class="button-group">
+        <button class="btn btn-success" onclick="migrateData()" id="migrateBtn" disabled>
+          📤 开始迁移
+        </button>
+        <button class="btn btn-danger" onclick="clearLocalData()" id="clearBtn">
+          🗑️ 清空本地数据
+        </button>
+      </div>
+    </div>
+
+    <!-- 日志 -->
+    <div class="section">
+      <div class="section-title">
+        📝 操作日志
+      </div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    let supabaseClient = null;
+    let localData = [];
+
+    // 初始化
+    function init() {
+      loadLocalData();
+      log('✅ 数据迁移工具已就绪', 'success');
+      log('📍 请先配置 Supabase 连接信息', 'info');
+    }
+
+    // 加载本地数据
+    function loadLocalData() {
+      try {
+        const saved = localStorage.getItem('badcaseList');
+        if (saved) {
+          localData = JSON.parse(saved);
+          document.getElementById('localCount').textContent = localData.length;
+          
+          if (localData.length > 0) {
+            const preview = document.getElementById('dataPreview');
+            preview.innerHTML = `
+              <p><strong>找到 ${localData.length} 条本地记录</strong></p>
+              <p>第一条：${localData[0].title || localData[0].id}</p>
+              <p>最后一条：${localData[localData.length - 1].title || localData[localData.length - 1].id}</p>
+            `;
+            log(`📦 发现 ${localData.length} 条本地数据`, 'info');
+          } else {
+            document.getElementById('dataPreview').innerHTML = '<p>⚠️ 未找到本地数据</p>';
+            log('⚠️ localStorage 中没有数据', 'warning');
+          }
+        } else {
+          document.getElementById('dataPreview').innerHTML = '<p>❌ localStorage 中没有 badcaseList 数据</p>';
+          log('❌ localStorage 中没有 badcaseList', 'error');
+        }
+      } catch (error) {
+        log('❌ 读取本地数据失败: ' + error.message, 'error');
+      }
+    }
+
+    // 测试连接
+    async function testConnection() {
+      const url = document.getElementById('supabaseUrl').value.trim();
+      const key = document.getElementById('supabaseKey').value.trim();
+
+      if (!url || !key) {
+        log('❌ 请填写完整的 Supabase 配置', 'error');
+        return;
+      }
+
+      log('🔌 正在测试 Supabase 连接...', 'info');
+
+      try {
+        supabaseClient = supabase.createClient(url, key);
+        
+        const { count, error } = await supabaseClient
+          .from('badcases')
+          .select('*', { count: 'exact', head: true });
+
+        if (error) {
+          throw error;
+        }
+
+        document.getElementById('supabaseCount').textContent = count || 0;
+        document.getElementById('migrateBtn').disabled = false;
+        
+        log('✅ Supabase 连接成功！', 'success');
+        log(`📊 数据库中现有 ${count || 0} 条记录`, 'info');
+      } catch (error) {
+        log('❌ 连接失败: ' + error.message, 'error');
+        log('💡 请检查：', 'warning');
+        log('   1. URL 格式是否正确（https://xxx.supabase.co）', 'warning');
+        log('   2. Anon Key 是否正确', 'warning');
+        log('   3. 是否已在 Supabase 中创建 badcases 表', 'warning');
+        log('   4. 是否已执行 enable_public_access.sql 脚本', 'warning');
+      }
+    }
+
+    // 迁移数据
+    async function migrateData() {
+      if (!supabaseClient) {
+        log('❌ 请先测试连接', 'error');
+        return;
+      }
+
+      if (localData.length === 0) {
+        log('❌ 没有可迁移的数据', 'error');
+        return;
+      }
+
+      const migrateBtn = document.getElementById('migrateBtn');
+      migrateBtn.disabled = true;
+
+      log('🚀 开始数据迁移...', 'info');
+      log(`📦 准备迁移 ${localData.length} 条记录`, 'info');
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (let i = 0; i < localData.length; i++) {
+        const item = localData[i];
+        try {
+          const { error } = await supabaseClient
+            .from('badcases')
+            .insert([item]);
+
+          if (error) {
+            throw error;
+          }
+
+          successCount++;
+          log(`✅ [${i + 1}/${localData.length}] 已迁移: ${item.title || item.id}`, 'success');
+        } catch (error) {
+          errorCount++;
+          log(`❌ [${i + 1}/${localData.length}] 失败: ${item.title || item.id} - ${error.message}`, 'error');
+        }
+      }
+
+      log('', 'info');
+      log('🎉 迁移完成！', 'success');
+      log(`✅ 成功: ${successCount} 条`, 'success');
+      if (errorCount > 0) {
+        log(`❌ 失败: ${errorCount} 条`, 'error');
+      }
+
+      // 更新统计
+      await testConnection();
+
+      migrateBtn.disabled = false;
+    }
+
+    // 清空本地数据
+    function clearLocalData() {
+      if (!confirm('⚠️ 确定要清空本地数据吗？此操作不可恢复！\n\n建议先完成数据迁移。')) {
+        return;
+      }
+
+      localStorage.removeItem('badcaseList');
+      localData = [];
+      document.getElementById('localCount').textContent = '0';
+      document.getElementById('dataPreview').innerHTML = '<p>✅ 本地数据已清空</p>';
+      log('🗑️ 本地数据已清空', 'warning');
+    }
+
+    // 日志记录
+    function log(message, type = 'info') {
+      const logEl = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      
+      const timestamp = new Date().toLocaleTimeString('zh-CN');
+      entry.textContent = `[${timestamp}] ${message}`;
+      
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // 页面加载时初始化
+    window.onload = init;
+  </script>
+</body>
+</html>
+

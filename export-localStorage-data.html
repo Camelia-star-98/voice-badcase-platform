@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导出 localStorage 数据</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .step-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        .info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            display: none;
+        }
+        .warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #d73a49;
+        }
+        .filename {
+            background: #667eea;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            display: inline-block;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📦 导出 localStorage 数据</h1>
+        <div class="subtitle">将数据迁移到 Supabase 数据库</div>
+
+        <div class="info">
+            <strong>💡 使用说明</strong><br>
+            此工具帮助你将浏览器 localStorage 中的数据导出为 JSON 文件，然后迁移到 Supabase 数据库。
+        </div>
+
+        <div class="step">
+            <div class="step-title">步骤 1：导出数据</div>
+            <button onclick="exportData()">🔍 读取 localStorage 数据</button>
+            <div id="stats" style="display: none;">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-label">记录总数</div>
+                        <div class="stat-value" id="totalCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">数据大小</div>
+                        <div class="stat-value" id="dataSize">0 KB</div>
+                    </div>
+                </div>
+            </div>
+            <textarea id="dataOutput" placeholder="点击上方按钮读取数据..."></textarea>
+        </div>
+
+        <div class="step">
+            <div class="step-title">步骤 2：保存为文件</div>
+            <button onclick="downloadData()">💾 下载为 JSON 文件</button>
+            <div class="success" id="downloadSuccess">
+                ✅ 文件已下载！文件名：<span class="filename">localStorage-backup.json</span>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">步骤 3：执行迁移</div>
+            <div class="warning">
+                <strong>⚠️ 注意</strong><br>
+                1. 确保 <span class="filename">localStorage-backup.json</span> 文件已下载到项目根目录<br>
+                2. 在终端中运行迁移命令：
+            </div>
+            <code style="display: block; padding: 15px; margin: 10px 0; background: #2d2d2d; color: #f8f8f2; border-radius: 5px;">
+                npx tsx migrate-to-supabase.ts
+            </code>
+        </div>
+
+        <div class="info">
+            <strong>🔧 需要安装依赖</strong><br>
+            如果提示缺少 tsx，请先运行：<code>npm install -g tsx</code>
+        </div>
+    </div>
+
+    <script>
+        let exportedData = null;
+
+        function exportData() {
+            try {
+                const data = localStorage.getItem('badcaseList');
+                if (!data) {
+                    alert('❌ localStorage 中没有找到 badcaseList 数据！\n\n请确保：\n1. 应用已在浏览器中运行\n2. 已有数据被保存到 localStorage');
+                    return;
+                }
+
+                const parsed = JSON.parse(data);
+                exportedData = parsed;
+
+                // 格式化显示
+                const formatted = JSON.stringify(parsed, null, 2);
+                document.getElementById('dataOutput').value = formatted;
+
+                // 显示统计信息
+                document.getElementById('totalCount').textContent = parsed.length;
+                document.getElementById('dataSize').textContent = (formatted.length / 1024).toFixed(2) + ' KB';
+                document.getElementById('stats').style.display = 'block';
+
+                alert(`✅ 成功读取 ${parsed.length} 条数据！\n\n现在可以点击"下载为 JSON 文件"保存数据。`);
+            } catch (error) {
+                alert('❌ 读取数据失败：' + error.message);
+                console.error('导出失败:', error);
+            }
+        }
+
+        function downloadData() {
+            if (!exportedData) {
+                alert('⚠️ 请先点击"读取 localStorage 数据"按钮！');
+                return;
+            }
+
+            try {
+                const jsonString = JSON.stringify(exportedData, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'localStorage-backup.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                document.getElementById('downloadSuccess').style.display = 'block';
+                
+                setTimeout(() => {
+                    alert(`✅ 文件下载成功！\n\n下一步：\n1. 将 localStorage-backup.json 移到项目根目录\n2. 在终端运行：npx tsx migrate-to-supabase.ts`);
+                }, 500);
+            } catch (error) {
+                alert('❌ 下载失败：' + error.message);
+                console.error('下载失败:', error);
+            }
+        }
+
+        // 页面加载时自动尝试读取
+        window.addEventListener('load', () => {
+            const data = localStorage.getItem('badcaseList');
+            if (data) {
+                setTimeout(() => {
+                    if (confirm('检测到 localStorage 中有数据，是否立即读取？')) {
+                        exportData();
+                    }
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
+
