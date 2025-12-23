@@ -31,14 +31,50 @@
 
 ---
 
-## 第二步：创建数据库表
+## 第二步：获取 Supabase URL 和 API Key
 
-### 2.1 打开 SQL Editor
+### 2.1 获取项目连接信息
+
+1. 在 Supabase Dashboard 中，选择你刚创建的项目
+2. 点击左侧菜单的 **"Settings"（齿轮图标）**
+3. 选择 **"API"** 标签页
+4. 你会看到以下信息：
+   - **Project URL**: 类似 `https://xxxxxxxxx.supabase.co`
+   - **Project API keys**:
+     - `anon` `public`: 这是公开密钥（前端使用）
+     - `service_role` `secret`: 这是服务端密钥（勿暴露）
+
+### 2.2 配置环境变量
+
+在项目根目录创建 `.env.local` 文件：
+
+```bash
+# 复制示例文件
+cp .env.local.example .env.local
+```
+
+然后编辑 `.env.local`，填入你的信息：
+
+```env
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-public-key-here
+```
+
+**⚠️ 重要提示**：
+- 使用 `anon/public` key，不要使用 `service_role` key
+- 确保 URL 格式正确（以 `https://` 开头，`.supabase.co` 结尾）
+- 保存后重启开发服务器
+
+---
+
+## 第三步：创建数据库表
+
+### 3.1 打开 SQL Editor
 
 1. 在 Supabase 项目页面，点击左侧菜单的 **"SQL Editor"**
 2. 点击 **"New query"** 创建新查询
 
-### 2.2 执行数据库初始化脚本
+### 3.2 执行数据库初始化脚本
 
 按照以下顺序执行 `database/` 目录下的 SQL 脚本：
 
