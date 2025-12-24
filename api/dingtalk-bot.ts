@@ -235,6 +235,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log(`[${new Date().toISOString()}] 收到请求:`, req.method, req.url);
   console.log('Query参数:', req.query);
   
+  // 支持HEAD请求（钉钉验证URL时可能会发送）
+  if (req.method === 'HEAD') {
+    console.log('✅ HEAD请求 - 返回200');
+    return res.status(200).end();
+  }
+  
   // 支持GET和POST请求
   if (req.method === 'GET') {
     // 处理钉钉的GET验证请求
