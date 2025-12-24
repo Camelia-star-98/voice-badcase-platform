@@ -731,10 +731,6 @@ const BadcaseListPage = () => {
               placeholder="请选择期望修复时间"
               style={{ width: '100%' }}
               format="YYYY-MM-DD"
-              disabledDate={(current) => {
-                // 禁用今天之前的日期
-                return current && current < dayjs().startOf('day');
-              }}
             />
           </Form.Item>
 
