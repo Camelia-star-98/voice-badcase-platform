@@ -9,7 +9,7 @@ export interface BadcaseData {
   reporter?: string; // 问题提报人
   category: string;
   expectedFixDate: string; // 期望修复时间
-  status: 'pending' | 'processing' | 'resolved';
+  status: 'pending' | 'algorithm_processing' | 'engineering_processing' | 'resolved' | 'processing';
   description: string;
   audioUrl?: string;
   videoUrl?: string; // 视频文件URL

@@ -94,7 +94,7 @@ const StatusFlowPage = () => {
   // 处理状态变更
   const handleStatusChange = (recordId: string, newStatus: string) => {
     updateBadcase(recordId, {
-      status: newStatus as 'pending' | 'processing' | 'resolved',
+      status: newStatus as 'pending' | 'algorithm_processing' | 'engineering_processing' | 'resolved' | 'processing',
     });
     message.success('状态更新成功');
   };

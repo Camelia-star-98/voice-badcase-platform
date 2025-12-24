@@ -52,7 +52,9 @@ const BadcaseListPage = () => {
     const colors = {
       resolved: 'success',
       processing: 'processing',
-      pending: 'warning',
+      algorithm_processing: 'processing',
+      engineering_processing: 'warning',
+      pending: 'default',
     };
     return colors[status as keyof typeof colors] || 'default';
   };
@@ -61,6 +63,8 @@ const BadcaseListPage = () => {
     const texts = {
       resolved: '已解决',
       processing: '处理中',
+      algorithm_processing: '算法处理中',
+      engineering_processing: '工程处理中',
       pending: '待处理',
     };
     return texts[status as keyof typeof texts] || status;
@@ -99,9 +103,11 @@ const BadcaseListPage = () => {
         <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
       ),
       filters: [
+        { text: '待处理', value: 'pending' },
+        { text: '算法处理中', value: 'algorithm_processing' },
+        { text: '工程处理中', value: 'engineering_processing' },
         { text: '已解决', value: 'resolved' },
         { text: '处理中', value: 'processing' },
-        { text: '待处理', value: 'pending' },
       ],
       onFilter: (value, record) => record.status === value,
     },
@@ -505,12 +511,14 @@ const BadcaseListPage = () => {
             <Select
               value={statusFilter}
               onChange={setStatusFilter}
-              style={{ width: 120 }}
+              style={{ width: 150 }}
             >
               <Option value="all">全部状态</Option>
+              <Option value="pending">待处理</Option>
+              <Option value="algorithm_processing">算法处理中</Option>
+              <Option value="engineering_processing">工程处理中</Option>
               <Option value="resolved">已解决</Option>
               <Option value="processing">处理中</Option>
-              <Option value="pending">待处理</Option>
             </Select>
             <Button type="primary" onClick={handleSearch}>
               搜索

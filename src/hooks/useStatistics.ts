@@ -47,8 +47,11 @@ export const useStatistics = (badcaseList: BadcaseData[]): StatisticsData => {
     const pendingCount = badcaseList.filter(item => 
       item.status === 'pending'
     ).length;
+    // 将 algorithm_processing, engineering_processing, processing 都归入 processingCount
     const processingCount = badcaseList.filter(item => 
-      item.status === 'processing'
+      item.status === 'processing' || 
+      item.status === 'algorithm_processing' || 
+      item.status === 'engineering_processing'
     ).length;
     const resolvedCount = badcaseList.filter(item => 
       item.status === 'resolved'
@@ -131,6 +134,7 @@ export const useStatistics = (badcaseList: BadcaseData[]): StatisticsData => {
       } else if (item.status === 'resolved') {
         weekData.resolved++;
       } else {
+        // algorithm_processing, engineering_processing, processing 都归入 processing
         weekData.processing++;
       }
     });
