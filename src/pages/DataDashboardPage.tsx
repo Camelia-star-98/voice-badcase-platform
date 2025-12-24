@@ -4,7 +4,6 @@ import ReactECharts from 'echarts-for-react';
 import { useBadcase } from '../contexts/BadcaseContext';
 import { useStatistics } from '../hooks/useStatistics';
 import { useRef, useEffect, useState } from 'react';
-import './DataDashboardPage.css';
 
 const DataDashboardPage = () => {
   const { badcaseList } = useBadcase();
