@@ -68,10 +68,11 @@ function parseBadcaseFromMessage(text: string): any {
 
     if (line.includes('学科：') || line.includes('学科:')) {
       data.subject = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '') || '';
-    } else if (line.includes('位置：') || line.includes('位置:')) {
+    } else if (line.includes('出现位置：') || line.includes('出现位置:') || 
+               line.includes('位置：') || line.includes('位置:')) {
       const location = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '') || '';
       // 智能识别位置
-      if (location.includes('TTS') || location.includes('全流程')) {
+      if (location.includes('TTS') || location.includes('做课') || location.includes('全程')) {
         data.location = 'full_tts';
       } else if (location.includes('互动') || location.includes('行课')) {
         data.location = 'interactive';
@@ -84,14 +85,15 @@ function parseBadcaseFromMessage(text: string): any {
       if (['P0', 'P1', 'P2'].includes(priority)) {
         data.priority = priority;
       }
-    } else if (line.includes('CMS课节ID：') || line.includes('CMS课节ID:') || 
-               line.includes('课节ID：') || line.includes('课节ID:')) {
+    } else if (line.includes('课节ID：') || line.includes('课节ID:') || 
+               line.includes('CMS课节ID：') || line.includes('CMS课节ID:')) {
       const value = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '');
       data.cms_section_id = value || null;
     } else if (line.includes('TTS课节ID：') || line.includes('TTS课节ID:')) {
       const value = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '');
       data.tts_section_id = value || null;
-    } else if (line.includes('模型ID：') || line.includes('模型ID:')) {
+    } else if (line.includes('问题模型ID：') || line.includes('问题模型ID:') || 
+               line.includes('模型ID：') || line.includes('模型ID:')) {
       const value = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '');
       data.model_id = value || null;
     } else if (line.includes('分类：') || line.includes('分类:')) {
@@ -99,7 +101,8 @@ function parseBadcaseFromMessage(text: string): any {
     } else if (line.includes('描述：') || line.includes('描述:') || 
                line.includes('问题描述：') || line.includes('问题描述:')) {
       data.description = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '') || '';
-    } else if (line.includes('提报人：') || line.includes('提报人:')) {
+    } else if (line.includes('问题提报人：') || line.includes('问题提报人:') || 
+               line.includes('提报人：') || line.includes('提报人:')) {
       data.reporter = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '') || '';
     } else if (line.includes('期望修复：') || line.includes('期望修复:') || 
                line.includes('期望修复时间：') || line.includes('期望修复时间:')) {
@@ -259,16 +262,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 ———————————————
 提报问题
-学科：【必填，如：英语/数学/语文】
-分类：【必填，如：读音错误/断句问题/语速异常】
+学科：【必填，如：英语/数学/语文/物理/化学】
+分类：【必填，如：读音错误/停顿不当/重读不对/语速突变/音量突变/音质问题/其他】
 优先级：【选填，P0/P1/P2，默认P2】
 问题描述：【必填，详细描述问题】
-位置：【选填，如：全流程TTS/行课互动】
-提报人：【选填，您的姓名】
-CMS课节ID：【选填】
-TTS课节ID：【选填】
-模型ID：【选填】
-期望修复时间：【选填，格式：2024-12-25】
+出现位置：【选填，如：全程TTS做课部分/行课互动部分】
+问题提报人：【必填，您的姓名】
+课节ID：【选填】
+问题模型ID：【必填】
+期望修复时间：【必填，格式：2024-12-25】
 ———————————————
 
 💡 提示：
@@ -356,15 +358,20 @@ TTS课节ID：【选填】
 
     // 构造成功消息
     const priorityEmoji = data.priority === 'P0' ? '🔴' : data.priority === 'P1' ? '🟡' : '🟢';
+    const locationText = data.location === 'full_tts' ? '全程TTS做课部分' : 
+                        data.location === 'interactive' ? '行课互动部分' : data.location;
+    
     const successMessage = `✅ Badcase提报成功！
 
 📋 ID: ${data.id}
 📚 学科: ${data.subject}
 📂 分类: ${data.category}
 ${priorityEmoji} 优先级: ${data.priority}
-${data.location ? `📍 位置: ${data.location === 'full_tts' ? '全流程TTS' : data.location === 'interactive' ? '行课互动' : data.location}` : ''}
-${data.reporter ? `👤 提报人: ${data.reporter}` : ''}
-${data.cms_section_id ? `🆔 CMS课节ID: ${data.cms_section_id}` : ''}
+${data.location ? `📍 出现位置: ${locationText}` : ''}
+👤 问题提报人: ${data.reporter}
+${data.cms_section_id ? `🆔 课节ID: ${data.cms_section_id}` : ''}
+${data.model_id ? `🤖 问题模型ID: ${data.model_id}` : ''}
+${data.expected_fix_date ? `⏰ 期望修复时间: ${data.expected_fix_date}` : ''}
 
 ✅ 已同步到平台，可前往查看详情。`;
 
