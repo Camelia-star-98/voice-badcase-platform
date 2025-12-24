@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>钉钉Badcase提报助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #667eea;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .required {
+            color: #f56565;
+            margin-left: 4px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .output-section {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .output-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .output-content {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            color: #2d3748;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .copy-btn {
+            margin-top: 15px;
+            width: 100%;
+            padding: 12px;
+            background: #48bb78;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.3);
+        }
+
+        .help-text {
+            font-size: 13px;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .example-box {
+            background: #edf2f7;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .example-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .example-content {
+            font-size: 13px;
+            color: #4a5568;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .category-item {
+            padding: 8px 12px;
+            background: #edf2f7;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .category-item:hover {
+            border-color: #667eea;
+            background: #e6f0ff;
+        }
+
+        .category-item.selected {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 钉钉Badcase提报助手</h1>
+            <p>快速生成标准格式的提报消息</p>
+        </div>
+
+        <div class="content">
+            <!-- 表单部分 -->
+            <div class="section">
+                <div class="section-title">📝 填写问题信息</div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        学科 <span class="required">*</span>
+                    </label>
+                    <select id="subject" class="form-control">
+                        <option value="">请选择</option>
+                        <option value="英语">英语</option>
+                        <option value="数学">数学</option>
+                        <option value="语文">语文</option>
+                        <option value="物理">物理</option>
+                        <option value="化学">化学</option>
+                        <option value="生物">生物</option>
+                        <option value="历史">历史</option>
+                        <option value="地理">地理</option>
+                        <option value="政治">政治</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">出现位置</label>
+                    <select id="location" class="form-control">
+                        <option value="">请选择</option>
+                        <option value="行课互动">行课互动</option>
+                        <option value="全程TTS">全程TTS</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="cms-section-group" style="display: none;">
+                    <label class="form-label">CMS课节ID</label>
+                    <input type="text" id="cms-section-id" class="form-control" placeholder="例如：123456">
+                    <div class="help-text">适用于行课互动场景</div>
+                </div>
+
+                <div class="form-group" id="tts-section-group" style="display: none;">
+                    <label class="form-label">全程TTS课节ID</label>
+                    <input type="text" id="tts-section-id" class="form-control" placeholder="例如：789012">
+                    <div class="help-text">适用于全程TTS场景</div>
+                </div>
+
+                <div class="form-group" id="model-id-group" style="display: none;">
+                    <label class="form-label">问题模型ID</label>
+                    <input type="text" id="model-id" class="form-control" placeholder="例如：model_abc123">
+                    <div class="help-text">适用于行课互动场景</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        分类 <span class="required">*</span>
+                    </label>
+                    <div class="category-grid">
+                        <div class="category-item" data-value="读音错误">读音错误</div>
+                        <div class="category-item" data-value="停顿不当">停顿不当</div>
+                        <div class="category-item" data-value="语速异常">语速异常</div>
+                        <div class="category-item" data-value="音量问题">音量问题</div>
+                        <div class="category-item" data-value="情感异常">情感异常</div>
+                        <div class="category-item" data-value="杂音噪音">杂音噪音</div>
+                        <div class="category-item" data-value="其他">其他</div>
+                    </div>
+                    <input type="hidden" id="category">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        问题描述 <span class="required">*</span>
+                    </label>
+                    <textarea id="description" class="form-control" placeholder="请详细描述遇到的问题，包括具体的文本、发音、表现等"></textarea>
+                    <div class="help-text">建议包含：问题现象、相关文本、出现频率等信息</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">提报人</label>
+                    <input type="text" id="reporter" class="form-control" placeholder="您的姓名">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">期望修复时间</label>
+                    <input type="date" id="expected-fix-date" class="form-control">
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="resetForm()">重置</button>
+                    <button class="btn btn-primary" onclick="generateMessage()">生成消息</button>
+                </div>
+            </div>
+
+            <!-- 输出部分 -->
+            <div class="output-section" id="output-section" style="display: none;">
+                <div class="output-title">📤 生成的消息（复制后发送到钉钉群）</div>
+                <div class="output-content" id="output-content"></div>
+                <button class="copy-btn" onclick="copyToClipboard()">📋 复制到剪贴板</button>
+            </div>
+
+            <!-- 示例 -->
+            <div class="section">
+                <div class="section-title">💡 使用说明</div>
+                <div class="example-box">
+                    <div class="example-title">操作步骤：</div>
+                    <ol style="margin-left: 20px; line-height: 2;">
+                        <li>填写上方表单（标有<span style="color: #f56565;">*</span>为必填项）</li>
+                        <li>点击"生成消息"按钮</li>
+                        <li>复制生成的消息</li>
+                        <li>粘贴到钉钉群中发送</li>
+                        <li>等待机器人回复确认</li>
+                    </ol>
+                </div>
+
+                <div class="example-box">
+                    <div class="example-title">消息示例：</div>
+                    <div class="example-content">提报问题
+学科：英语
+位置：行课互动
+CMS课节ID：123456
+分类：读音错误
+描述：A相关的单词发音不准确
+提报人：张三
+期望修复：2025-12-30</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 位置选择逻辑
+        document.getElementById('location').addEventListener('change', function() {
+            const value = this.value;
+            const cmsGroup = document.getElementById('cms-section-group');
+            const ttsGroup = document.getElementById('tts-section-group');
+            const modelGroup = document.getElementById('model-id-group');
+
+            if (value === '行课互动') {
+                cmsGroup.style.display = 'block';
+                ttsGroup.style.display = 'none';
+                modelGroup.style.display = 'block';
+            } else if (value === '全程TTS') {
+                cmsGroup.style.display = 'none';
+                ttsGroup.style.display = 'block';
+                modelGroup.style.display = 'none';
+            } else {
+                cmsGroup.style.display = 'none';
+                ttsGroup.style.display = 'none';
+                modelGroup.style.display = 'none';
+            }
+        });
+
+        // 分类选择逻辑
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.category-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+                document.getElementById('category').value = this.dataset.value;
+            });
+        });
+
+        // 生成消息
+        function generateMessage() {
+            const subject = document.getElementById('subject').value;
+            const location = document.getElementById('location').value;
+            const cmsSectionId = document.getElementById('cms-section-id').value;
+            const ttsSectionId = document.getElementById('tts-section-id').value;
+            const modelId = document.getElementById('model-id').value;
+            const category = document.getElementById('category').value;
+            const description = document.getElementById('description').value;
+            const reporter = document.getElementById('reporter').value;
+            const expectedFixDate = document.getElementById('expected-fix-date').value;
+
+            // 验证必填字段
+            if (!subject || !category || !description) {
+                alert('请填写所有必填字段！\n\n必填字段：\n• 学科\n• 分类\n• 问题描述');
+                return;
+            }
+
+            // 构建消息
+            let message = '提报问题';
+            message += '\n学科：' + subject;
+            
+            if (location) {
+                message += '\n位置：' + location;
+            }
+            
+            if (cmsSectionId && location === '行课互动') {
+                message += '\nCMS课节ID：' + cmsSectionId;
+            }
+            
+            if (ttsSectionId && location === '全程TTS') {
+                message += '\nTTS课节ID：' + ttsSectionId;
+            }
+            
+            if (modelId && location === '行课互动') {
+                message += '\n模型ID：' + modelId;
+            }
+            
+            message += '\n分类：' + category;
+            message += '\n描述：' + description;
+            
+            if (reporter) {
+                message += '\n提报人：' + reporter;
+            }
+            
+            if (expectedFixDate) {
+                message += '\n期望修复：' + expectedFixDate;
+            }
+
+            // 显示输出
+            document.getElementById('output-content').textContent = message;
+            document.getElementById('output-section').style.display = 'block';
+            
+            // 滚动到输出区域
+            document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard() {
+            const content = document.getElementById('output-content').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ 已复制！';
+                btn.style.background = '#38a169';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#48bb78';
+                }, 2000);
+            }).catch(err => {
+                alert('复制失败，请手动复制');
+                console.error('复制失败:', err);
+            });
+        }
+
+        // 重置表单
+        function resetForm() {
+            document.getElementById('subject').value = '';
+            document.getElementById('location').value = '';
+            document.getElementById('cms-section-id').value = '';
+            document.getElementById('tts-section-id').value = '';
+            document.getElementById('model-id').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('reporter').value = '';
+            document.getElementById('expected-fix-date').value = '';
+            
+            document.querySelectorAll('.category-item').forEach(i => i.classList.remove('selected'));
+            document.getElementById('output-section').style.display = 'none';
+            document.getElementById('cms-section-group').style.display = 'none';
+            document.getElementById('tts-section-group').style.display = 'none';
+            document.getElementById('model-id-group').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+
