@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, Card, Space, Tag, Input, Select, Button, Modal, Descriptions, message, Popconfirm } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined, EyeOutlined, PlayCircleOutlined, LockOutlined, DeleteOutlined } from '@ant-design/icons';
@@ -14,6 +15,7 @@ const CORRECT_PASSWORD = '1222';
 const AUTH_KEY = 'status_flow_auth';
 
 const StatusFlowPage = () => {
+  const navigate = useNavigate();
   const { badcaseList, updateBadcase, deleteBadcase } = useBadcase();
   const [dataSource, setDataSource] = useState<BadcaseData[]>(badcaseList);
   const [loading, setLoading] = useState(false);
@@ -355,6 +357,7 @@ const StatusFlowPage = () => {
         onOk={handlePasswordSubmit}
         onCancel={() => {
           message.warning('需要验证密码才能访问该页面');
+          navigate('/'); // 返回首页
         }}
         okText="确认"
         cancelText="取消"
