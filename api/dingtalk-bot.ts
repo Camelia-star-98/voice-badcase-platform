@@ -204,7 +204,20 @@ async function sendMessageToDingTalk(
  * 主处理函数
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // 只接受POST请求
+  // 支持GET和POST请求
+  if (req.method === 'GET') {
+    // 处理钉钉的GET验证请求
+    const { msg_signature, timestamp, nonce } = req.query;
+    
+    // 简单响应验证
+    return res.status(200).json({
+      msg_signature,
+      timestamp,
+      nonce,
+      message: 'DingTalk bot endpoint is ready'
+    });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -212,13 +225,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const body = req.body;
 
-    // 处理钉钉的URL验证请求
+    // 处理钉钉的URL验证请求（POST方式）
+    // 钉钉企业内部应用验证时会发送这种请求
     if (body.msgtype === 'text' && body.text?.content === 'validation') {
       return res.status(200).json({
         msg_signature: body.msg_signature,
         timestamp: body.timestamp,
         nonce: body.nonce,
         encrypt: body.encrypt
+      });
+    }
+    
+    // 处理空消息验证（有些情况钉钉会发这种）
+    if (!body.msgtype && !body.text) {
+      return res.status(200).json({
+        success: true,
+        message: 'Endpoint verified'
       });
     }
 

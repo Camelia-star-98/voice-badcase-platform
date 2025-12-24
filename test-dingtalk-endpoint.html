@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试钉钉API端点</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #1890ff;
+      margin-bottom: 30px;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #e8e8e8;
+      border-radius: 4px;
+      background: #fafafa;
+    }
+    button {
+      background: #1890ff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #40a9ff;
+    }
+    .result {
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .success {
+      background: #f6ffed;
+      border: 1px solid #b7eb8f;
+      color: #52c41a;
+    }
+    .error {
+      background: #fff1f0;
+      border: 1px solid #ffccc7;
+      color: #ff4d4f;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 钉钉API端点测试工具</h1>
+    
+    <div class="test-section">
+      <h3>📋 配置信息</h3>
+      <label>Vercel项目URL:</label>
+      <input type="text" id="vercelUrl" placeholder="https://your-project.vercel.app" value="">
+      
+      <p style="margin-top: 20px; color: #666;">
+        ℹ️ 请先填入您的Vercel项目地址，然后进行测试
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h3>✅ 测试1: GET请求验证</h3>
+      <p>模拟钉钉的GET验证请求</p>
+      <button onclick="testGetRequest()">执行GET测试</button>
+      <div id="getResult"></div>
+    </div>
+
+    <div class="test-section">
+      <h3>✅ 测试2: POST空请求验证</h3>
+      <p>模拟钉钉的POST验证请求（空body）</p>
+      <button onclick="testPostEmpty()">执行空POST测试</button>
+      <div id="postEmptyResult"></div>
+    </div>
+
+    <div class="test-section">
+      <h3>✅ 测试3: 模拟用户消息</h3>
+      <p>模拟用户发送提报消息</p>
+      <button onclick="testUserMessage()">执行消息测试</button>
+      <div id="messageResult"></div>
+    </div>
+
+    <div class="test-section">
+      <h3>📋 钉钉配置指南</h3>
+      <ol>
+        <li>在钉钉开放平台，进入 <strong>机器人与消息推送</strong></li>
+        <li>消息接收地址填写: <code id="webhookUrl">https://your-project.vercel.app/api/dingtalk-bot</code></li>
+        <li>点击 <strong>保存</strong>（会自动验证）</li>
+        <li>如果验证通过，点击 <strong>发布</strong> 按钮发布版本</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    // 自动填充当前域名
+    const currentDomain = window.location.origin;
+    if (currentDomain.includes('vercel.app') || currentDomain.includes('localhost')) {
+      document.getElementById('vercelUrl').value = currentDomain;
+      document.getElementById('webhookUrl').textContent = `${currentDomain}/api/dingtalk-bot`;
+    }
+
+    function getApiUrl() {
+      const url = document.getElementById('vercelUrl').value.trim();
+      if (!url) {
+        alert('请先填写Vercel项目URL！');
+        return null;
+      }
+      return url.replace(/\/$/, '') + '/api/dingtalk-bot';
+    }
+
+    async function testGetRequest() {
+      const resultDiv = document.getElementById('getResult');
+      resultDiv.innerHTML = '<div style="color: #1890ff;">⏳ 测试中...</div>';
+      
+      try {
+        const apiUrl = getApiUrl();
+        if (!apiUrl) return;
+        
+        const url = `${apiUrl}?msg_signature=test&timestamp=${Date.now()}&nonce=123456`;
+        const response = await fetch(url, {
+          method: 'GET',
+        });
+        
+        const data = await response.json();
+        
+        resultDiv.innerHTML = `<div class="result success">
+✅ GET请求成功！
+状态码: ${response.status}
+响应: ${JSON.stringify(data, null, 2)}
+
+✅ 此端点可以响应GET请求
+</div>`;
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="result error">
+❌ GET请求失败！
+错误: ${error.message}
+
+❗ 请检查：
+1. Vercel URL是否正确
+2. 项目是否已部署
+3. API路由是否配置正确
+</div>`;
+      }
+    }
+
+    async function testPostEmpty() {
+      const resultDiv = document.getElementById('postEmptyResult');
+      resultDiv.innerHTML = '<div style="color: #1890ff;">⏳ 测试中...</div>';
+      
+      try {
+        const apiUrl = getApiUrl();
+        if (!apiUrl) return;
+        
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({})
+        });
+        
+        const data = await response.json();
+        
+        resultDiv.innerHTML = `<div class="result success">
+✅ POST空请求成功！
+状态码: ${response.status}
+响应: ${JSON.stringify(data, null, 2)}
+
+✅ 端点可以正确处理验证请求
+</div>`;
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="result error">
+❌ POST请求失败！
+错误: ${error.message}
+</div>`;
+      }
+    }
+
+    async function testUserMessage() {
+      const resultDiv = document.getElementById('messageResult');
+      resultDiv.innerHTML = '<div style="color: #1890ff;">⏳ 测试中...</div>';
+      
+      try {
+        const apiUrl = getApiUrl();
+        if (!apiUrl) return;
+        
+        const testMessage = {
+          msgtype: 'text',
+          text: {
+            content: '提报问题'
+          },
+          senderId: 'test_user_123',
+          senderStaffId: 'test_user_123',
+          timestamp: Date.now().toString(),
+          sign: 'test_signature'
+        };
+        
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(testMessage)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          resultDiv.innerHTML = `<div class="result success">
+✅ 消息处理成功！
+状态码: ${response.status}
+响应: ${JSON.stringify(data, null, 2)}
+
+✅ 机器人可以正确处理用户消息
+</div>`;
+        } else {
+          resultDiv.innerHTML = `<div class="result error">
+⚠️ 消息处理返回失败
+响应: ${JSON.stringify(data, null, 2)}
+</div>`;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="result error">
+❌ 消息测试失败！
+错误: ${error.message}
+</div>`;
+      }
+    }
+  </script>
+</body>
+</html>
+
