@@ -12,6 +12,7 @@ export interface BadcaseData {
   status: 'pending' | 'processing' | 'resolved';
   description: string;
   audioUrl?: string;
+  videoUrl?: string; // 视频文件URL
   modelId?: string; // 问题模型ID
   remark?: string; // 备注信息
   createdAt: string;

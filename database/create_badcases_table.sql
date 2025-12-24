@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS public.badcases (
     
     -- 附加信息
     audio_url TEXT,                              -- 音频URL
+    video_url TEXT,                              -- 视频URL
     model_id TEXT,                               -- 问题模型ID
     
     -- 时间戳（自动管理）
@@ -121,6 +122,7 @@ BEGIN
   RAISE NOTICE '  - status (状态)';
   RAISE NOTICE '  - description (描述)';
   RAISE NOTICE '  - audio_url (音频URL)';
+  RAISE NOTICE '  - video_url (视频URL)';
   RAISE NOTICE '  - model_id (模型ID)';
   RAISE NOTICE '  - created_at (创建时间)';
   RAISE NOTICE '  - updated_at (更新时间)';

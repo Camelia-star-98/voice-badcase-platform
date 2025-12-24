@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Table, Card, Space, Tag, Input, Select, Button, Modal, Descriptions, Form, Upload, message, DatePicker } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { SearchOutlined, EyeOutlined, PlayCircleOutlined, UploadOutlined, CloudUploadOutlined } from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, PlayCircleOutlined, UploadOutlined, CloudUploadOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
 import { getSubjectList, getModelsBySubject, getSubjectLabel } from '../config/subjectModelMapping';
 import { useBadcase } from '../contexts/BadcaseContext';
@@ -25,6 +25,7 @@ const BadcaseListPage = () => {
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [uploadForm] = Form.useForm();
   const [audioFileList, setAudioFileList] = useState<UploadFile[]>([]);
+  const [videoFileList, setVideoFileList] = useState<UploadFile[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [availableModels, setAvailableModels] = useState<string[]>([]);
@@ -33,6 +34,8 @@ const BadcaseListPage = () => {
   const [audioPlayerVisible, setAudioPlayerVisible] = useState(false);
   const [currentAudioUrl, setCurrentAudioUrl] = useState('');
   const [currentRecordId, setCurrentRecordId] = useState('');
+  const [videoPlayerVisible, setVideoPlayerVisible] = useState(false);
+  const [currentVideoUrl, setCurrentVideoUrl] = useState('');
 
   // 同步 badcaseList 到 dataSource，并按ID降序排列（新到旧）
   useEffect(() => {
@@ -207,7 +210,16 @@ const BadcaseListPage = () => {
               icon={<PlayCircleOutlined />}
               onClick={() => handlePlayAudio(record)}
             >
-              播放
+              音频
+            </Button>
+          )}
+          {record.videoUrl && (
+            <Button
+              type="link"
+              icon={<VideoCameraOutlined />}
+              onClick={() => handlePlayVideo(record)}
+            >
+              视频
             </Button>
           )}
         </Space>
@@ -227,6 +239,15 @@ const BadcaseListPage = () => {
       setAudioPlayerVisible(true);
     } else {
       message.warning('该记录没有上传音频文件');
+    }
+  };
+
+  const handlePlayVideo = (record: BadcaseData) => {
+    if (record.videoUrl) {
+      setCurrentVideoUrl(record.videoUrl);
+      setVideoPlayerVisible(true);
+    } else {
+      message.warning('该记录没有上传视频文件');
     }
   };
 
@@ -285,6 +306,7 @@ const BadcaseListPage = () => {
     setUploadModalVisible(true);
     uploadForm.resetFields();
     setAudioFileList([]);
+    setVideoFileList([]);
     setSelectedSubject('');
     setAvailableModels([]);
     setSelectedLocation('');
@@ -342,6 +364,25 @@ const BadcaseListPage = () => {
         }
       }
       
+      // 将视频文件转换为 Base64
+      let videoUrl: string | undefined = undefined;
+      if (videoFileList.length > 0 && videoFileList[0].originFileObj) {
+        try {
+          const file = videoFileList[0].originFileObj as File;
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          videoUrl = base64;
+          console.log('✅ 视频文件已成功处理');
+        } catch (error) {
+          console.error('❌ 视频文件转换失败:', error);
+          message.warning('视频文件处理失败，将跳过视频上传');
+        }
+      }
+      
       // 创建新的Badcase记录
       const newBadcase: BadcaseData = {
         id: newId,
@@ -356,6 +397,7 @@ const BadcaseListPage = () => {
         status: 'pending',
         description: values.description,
         audioUrl: audioUrl,
+        videoUrl: videoUrl,
         modelId: values.location === 'interactive' ? values.modelId : undefined, // 只在行课互动时保存问题模型ID
         createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
         updatedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
@@ -368,6 +410,7 @@ const BadcaseListPage = () => {
       setUploadModalVisible(false);
       uploadForm.resetFields();
       setAudioFileList([]);
+      setVideoFileList([]);
       setSelectedCategory('');
       setSelectedSubject('');
       setAvailableModels([]);
@@ -393,6 +436,27 @@ const BadcaseListPage = () => {
     const isLt10M = file.size / 1024 / 1024 < 10;
     if (!isLt10M) {
       message.error('音频文件大小不能超过10MB！');
+      return false;
+    }
+    return false; // 阻止自动上传
+  };
+
+  const handleVideoChange = (info: { fileList: UploadFile[] }) => {
+    // 限制只能上传一个文件
+    let fileList = [...info.fileList];
+    fileList = fileList.slice(-1);
+    setVideoFileList(fileList);
+  };
+
+  const beforeVideoUpload = (file: File) => {
+    const isVideo = file.type.startsWith('video/');
+    if (!isVideo) {
+      message.error('只能上传视频文件！');
+      return false;
+    }
+    const isLt50M = file.size / 1024 / 1024 < 50;
+    if (!isLt50M) {
+      message.error('视频文件大小不能超过50MB！');
       return false;
     }
     return false; // 阻止自动上传
@@ -564,6 +628,17 @@ const BadcaseListPage = () => {
                 </Button>
               </Descriptions.Item>
             )}
+            {selectedRecord.videoUrl && (
+              <Descriptions.Item label="视频文件" span={2}>
+                <Button
+                  type="link"
+                  icon={<VideoCameraOutlined />}
+                  onClick={() => handlePlayVideo(selectedRecord)}
+                >
+                  播放视频
+                </Button>
+              </Descriptions.Item>
+            )}
           </Descriptions>
         )}
       </Modal>
@@ -581,6 +656,7 @@ const BadcaseListPage = () => {
           setUploadModalVisible(false);
           uploadForm.resetFields();
           setAudioFileList([]);
+          setVideoFileList([]);
           setSelectedCategory('');
           setSelectedSubject('');
           setAvailableModels([]);
@@ -766,6 +842,23 @@ const BadcaseListPage = () => {
               </Button>
             </Upload>
           </Form.Item>
+
+          <Form.Item
+            label="视频文件"
+            extra="支持 MP4、MOV、AVI 等格式，文件大小不超过50MB，方便定位和分类问题"
+          >
+            <Upload
+              fileList={videoFileList}
+              onChange={handleVideoChange}
+              beforeUpload={beforeVideoUpload}
+              accept="video/*"
+              maxCount={1}
+            >
+              <Button icon={<UploadOutlined />} block>
+                {videoFileList.length > 0 ? '重新选择视频文件' : '上传视频文件（可选）'}
+              </Button>
+            </Upload>
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -776,6 +869,30 @@ const BadcaseListPage = () => {
         recordId={currentRecordId}
         onClose={() => setAudioPlayerVisible(false)}
       />
+
+      {/* 视频播放器 */}
+      <Modal
+        title="视频播放"
+        open={videoPlayerVisible}
+        onCancel={() => setVideoPlayerVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setVideoPlayerVisible(false)}>
+            关闭
+          </Button>,
+        ]}
+        width={800}
+        centered
+      >
+        {currentVideoUrl && (
+          <video
+            controls
+            style={{ width: '100%', maxHeight: '500px' }}
+            src={currentVideoUrl}
+          >
+            您的浏览器不支持视频播放
+          </video>
+        )}
+      </Modal>
     </div>
   );
 };
