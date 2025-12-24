@@ -3,11 +3,43 @@ import { CheckCircleOutlined, ClockCircleOutlined, SyncOutlined } from '@ant-des
 import ReactECharts from 'echarts-for-react';
 import { useBadcase } from '../contexts/BadcaseContext';
 import { useStatistics } from '../hooks/useStatistics';
+import { useRef, useEffect, useState } from 'react';
 import './DataDashboardPage.css';
 
 const DataDashboardPage = () => {
   const { badcaseList } = useBadcase();
   const stats = useStatistics(badcaseList);
+  const chartRefs = useRef<any[]>([]);
+  const [chartsReady, setChartsReady] = useState(false);
+
+  // 等待数据加载后再渲染图表
+  useEffect(() => {
+    if (badcaseList && badcaseList.length >= 0) {
+      // 延迟一小段时间确保 DOM 准备好
+      const timer = setTimeout(() => {
+        setChartsReady(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [badcaseList]);
+
+  // 组件卸载时清理所有图表实例
+  useEffect(() => {
+    return () => {
+      chartRefs.current.forEach(ref => {
+        if (ref && ref.getEchartsInstance) {
+          try {
+            const instance = ref.getEchartsInstance();
+            if (instance && !instance.isDisposed()) {
+              instance.dispose();
+            }
+          } catch (e) {
+            // 忽略清理错误
+          }
+        }
+      });
+    };
+  }, []);
 
   // 饼图配置 - Badcase累计修复占比
   const pieChartOption = {
@@ -287,40 +319,51 @@ const DataDashboardPage = () => {
       </Row>
 
       {/* 图表区域 */}
-      <Row gutter={[16, 16]}>
-        {/* 饼图 */}
-        <Col xs={24} lg={12}>
-          <Card className="chart-card">
-            <ReactECharts 
-              option={pieChartOption} 
-              style={{ height: '400px' }}
-              opts={{ renderer: 'svg' }}
-            />
-          </Card>
-        </Col>
+      {chartsReady && (
+        <Row gutter={[16, 16]}>
+          {/* 饼图 */}
+          <Col xs={24} lg={12}>
+            <Card className="chart-card">
+              <ReactECharts 
+                ref={(e) => chartRefs.current[0] = e}
+                option={pieChartOption} 
+                style={{ height: '400px' }}
+                opts={{ renderer: 'svg' }}
+                notMerge={true}
+                lazyUpdate={true}
+              />
+            </Card>
+          </Col>
 
-        {/* 柱状图 - 优先级趋势 */}
-        <Col xs={24} lg={12}>
-          <Card className="chart-card">
-            <ReactECharts 
-              option={barChartOption} 
-              style={{ height: '400px' }}
-              opts={{ renderer: 'svg' }}
-            />
-          </Card>
-        </Col>
+          {/* 柱状图 - 优先级趋势 */}
+          <Col xs={24} lg={12}>
+            <Card className="chart-card">
+              <ReactECharts 
+                ref={(e) => chartRefs.current[1] = e}
+                option={barChartOption} 
+                style={{ height: '400px' }}
+                opts={{ renderer: 'svg' }}
+                notMerge={true}
+                lazyUpdate={true}
+              />
+            </Card>
+          </Col>
 
-        {/* 堆叠面积图 - 解决进度 */}
-        <Col xs={24}>
-          <Card className="chart-card">
-            <ReactECharts 
-              option={areaChartOption} 
-              style={{ height: '400px' }}
-              opts={{ renderer: 'svg' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+          {/* 堆叠面积图 - 解决进度 */}
+          <Col xs={24}>
+            <Card className="chart-card">
+              <ReactECharts 
+                ref={(e) => chartRefs.current[2] = e}
+                option={areaChartOption} 
+                style={{ height: '400px' }}
+                opts={{ renderer: 'svg' }}
+                notMerge={true}
+                lazyUpdate={true}
+              />
+            </Card>
+          </Col>
+        </Row>
+      )}
 
       {/* 按分类统计 */}
       {stats.categoryDistribution.length > 0 && (

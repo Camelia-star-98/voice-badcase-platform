@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数据迁移工具 - LocalStorage 到 Supabase</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      border-left: 4px solid #4CAF50;
+    }
+    .data-preview {
+      background: #fff;
+      padding: 15px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .danger {
+      background: #f44336;
+    }
+    .danger:hover {
+      background: #da190b;
+    }
+    .info {
+      background: #2196F3;
+    }
+    .info:hover {
+      background: #0b7dda;
+    }
+    .status {
+      padding: 10px;
+      margin-top: 15px;
+      border-radius: 5px;
+      display: none;
+    }
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+    .status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+      display: block;
+    }
+    .count {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4CAF50;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔄 数据迁移工具</h1>
+    <p class="subtitle">将 localStorage 中的数据迁移到 Supabase 数据库</p>
+
+    <!-- 步骤 1: 检查 localStorage -->
+    <div class="section">
+      <h3>📊 步骤 1: 检查本地数据</h3>
+      <button onclick="checkLocalStorage()">检查 localStorage 数据</button>
+      <div id="localStatus" class="status"></div>
+      <div class="count" id="localCount" style="display:none;"></div>
+      <div id="localPreview" class="data-preview" style="display:none;"></div>
+    </div>
+
+    <!-- 步骤 2: 连接 Supabase -->
+    <div class="section">
+      <h3>🔌 步骤 2: 连接 Supabase</h3>
+      <button onclick="testSupabaseConnection()" class="info">测试 Supabase 连接</button>
+      <div id="supabaseStatus" class="status"></div>
+    </div>
+
+    <!-- 步骤 3: 迁移数据 -->
+    <div class="section">
+      <h3>🚀 步骤 3: 迁移数据</h3>
+      <button onclick="migrateData()" id="migrateBtn" disabled>开始迁移</button>
+      <button onclick="clearLocalStorage()" class="danger" id="clearBtn" disabled>清空 localStorage（迁移成功后）</button>
+      <div id="migrateStatus" class="status"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    const SUPABASE_URL = 'https://mcpyilgpotajpmgblorc.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jcHlpbGdwb3RhanBtZ2Jsb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzODUxNzMsImV4cCI6MjA4MTk2MTE3M30.mmVnFh6uDlRdlOKmtKQSd2WnLBKd4ApE4OWqIMu-41c';
+
+    let supabase;
+    let localData = [];
+    let isConnected = false;
+
+    // 初始化 Supabase
+    try {
+      supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log('✅ Supabase 客户端已初始化');
+    } catch (error) {
+      console.error('❌ Supabase 客户端初始化失败:', error);
+    }
+
+    // 检查 localStorage
+    window.checkLocalStorage = function() {
+      const statusDiv = document.getElementById('localStatus');
+      const countDiv = document.getElementById('localCount');
+      const previewDiv = document.getElementById('localPreview');
+
+      try {
+        const savedData = localStorage.getItem('badcaseList');
+        
+        if (!savedData) {
+          statusDiv.className = 'status info';
+          statusDiv.textContent = '⚠️ localStorage 中没有找到数据';
+          countDiv.style.display = 'none';
+          previewDiv.style.display = 'none';
+          return;
+        }
+
+        localData = JSON.parse(savedData);
+        
+        if (localData.length === 0) {
+          statusDiv.className = 'status info';
+          statusDiv.textContent = '⚠️ localStorage 中的数据为空';
+          countDiv.style.display = 'none';
+          previewDiv.style.display = 'none';
+          return;
+        }
+
+        statusDiv.className = 'status success';
+        statusDiv.textContent = `✅ 成功读取 localStorage 数据`;
+        
+        countDiv.textContent = `找到 ${localData.length} 条记录`;
+        countDiv.style.display = 'block';
+        
+        previewDiv.textContent = JSON.stringify(localData, null, 2);
+        previewDiv.style.display = 'block';
+
+        console.log('✅ localStorage 数据:', localData);
+      } catch (error) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = `❌ 读取失败: ${error.message}`;
+        countDiv.style.display = 'none';
+        previewDiv.style.display = 'none';
+      }
+    };
+
+    // 测试 Supabase 连接
+    window.testSupabaseConnection = async function() {
+      const statusDiv = document.getElementById('supabaseStatus');
+      const migrateBtn = document.getElementById('migrateBtn');
+
+      try {
+        statusDiv.className = 'status info';
+        statusDiv.textContent = '🔄 正在连接 Supabase...';
+
+        // 测试查询
+        const { data, error, count } = await supabase
+          .from('badcases')
+          .select('*', { count: 'exact' });
+
+        if (error) throw error;
+
+        isConnected = true;
+        statusDiv.className = 'status success';
+        statusDiv.textContent = `✅ Supabase 连接成功！当前数据库中有 ${count || 0} 条记录`;
+        
+        migrateBtn.disabled = localData.length === 0;
+        
+        console.log('✅ Supabase 当前数据:', data);
+      } catch (error) {
+        isConnected = false;
+        statusDiv.className = 'status error';
+        statusDiv.textContent = `❌ 连接失败: ${error.message}`;
+        migrateBtn.disabled = true;
+        console.error('❌ Supabase 连接错误:', error);
+      }
+    };
+
+    // 迁移数据
+    window.migrateData = async function() {
+      const statusDiv = document.getElementById('migrateStatus');
+      const migrateBtn = document.getElementById('migrateBtn');
+      const clearBtn = document.getElementById('clearBtn');
+
+      if (!isConnected) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = '❌ 请先测试 Supabase 连接';
+        return;
+      }
+
+      if (localData.length === 0) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = '❌ 没有数据需要迁移';
+        return;
+      }
+
+      try {
+        migrateBtn.disabled = true;
+        statusDiv.className = 'status info';
+        statusDiv.textContent = `🔄 正在迁移 ${localData.length} 条数据...`;
+
+        // 批量插入数据
+        const { data, error } = await supabase
+          .from('badcases')
+          .insert(localData)
+          .select();
+
+        if (error) throw error;
+
+        statusDiv.className = 'status success';
+        statusDiv.textContent = `✅ 成功迁移 ${data.length} 条数据到 Supabase！`;
+        
+        clearBtn.disabled = false;
+        
+        console.log('✅ 迁移成功:', data);
+      } catch (error) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = `❌ 迁移失败: ${error.message}`;
+        migrateBtn.disabled = false;
+        console.error('❌ 迁移错误:', error);
+      }
+    };
+
+    // 清空 localStorage
+    window.clearLocalStorage = function() {
+      if (confirm('⚠️ 确定要清空 localStorage 吗？此操作不可恢复！\n\n请确保数据已成功迁移到 Supabase。')) {
+        localStorage.removeItem('badcaseList');
+        
+        const statusDiv = document.getElementById('migrateStatus');
+        statusDiv.className = 'status success';
+        statusDiv.textContent = '✅ localStorage 已清空！现在可以刷新主应用，数据将从 Supabase 加载。';
+        
+        document.getElementById('clearBtn').disabled = true;
+        
+        console.log('✅ localStorage 已清空');
+      }
+    };
+
+    // 页面加载时自动检查
+    window.addEventListener('load', () => {
+      checkLocalStorage();
+    });
+  </script>
+</body>
+</html>
+
