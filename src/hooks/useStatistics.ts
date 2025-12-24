@@ -48,9 +48,7 @@ export const useStatistics = (badcaseList: BadcaseData[]): StatisticsData => {
       item.status === 'pending'
     ).length;
     const processingCount = badcaseList.filter(item => 
-      item.status === 'processing' || 
-      item.status === 'algorithm_processing' || 
-      item.status === 'engineering_processing'
+      item.status === 'processing'
     ).length;
     const resolvedCount = badcaseList.filter(item => 
       item.status === 'resolved'
@@ -90,7 +88,6 @@ export const useStatistics = (badcaseList: BadcaseData[]): StatisticsData => {
     
     badcaseList.forEach(item => {
       const date = new Date(item.date);
-      const weekNumber = getWeekNumber(date);
       const weekKey = formatWeek(date);
       
       if (!weeklyMap.has(weekKey)) {
@@ -168,13 +165,6 @@ export const useStatistics = (badcaseList: BadcaseData[]): StatisticsData => {
     };
   }, [badcaseList]);
 };
-
-// 辅助函数：获取周数
-function getWeekNumber(date: Date): number {
-  const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-  const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
-  return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-}
 
 // 辅助函数：格式化周
 function formatWeek(date: Date): string {
