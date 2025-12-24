@@ -128,6 +128,11 @@ const BadcaseListPage = () => {
         if (location === 'interactive') return '行课互动部分';
         return '-';
       },
+      filters: [
+        { text: '全程TTS做课部分', value: 'fullTTS' },
+        { text: '行课互动部分', value: 'interactive' },
+      ],
+      onFilter: (value, record) => record.location === value,
     },
     {
       title: '课节ID',
@@ -155,6 +160,19 @@ const BadcaseListPage = () => {
       key: 'modelId',
       width: 150,
       ellipsis: true,
+      filters: (() => {
+        // 动态获取所有不重复的问题模型ID
+        const uniqueModelIds = Array.from(
+          new Set(
+            dataSource
+              .filter(item => item.modelId && item.modelId.trim() !== '')
+              .map(item => item.modelId!)
+          )
+        ).sort();
+        return uniqueModelIds.map(id => ({ text: id, value: id }));
+      })(),
+      onFilter: (value, record) => record.modelId === value,
+      filterSearch: true, // 启用筛选搜索功能
     },
     {
       title: '期望修复时间',
