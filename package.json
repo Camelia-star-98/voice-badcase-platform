@@ -1,7 +1,7 @@
 {
   "name": "voice-badcase-platform",
   "version": "1.0.0",
-  "description": "语音Badcase数据可视化平台",
+  "description": "语音TTS badcase跟进",
   "type": "module",
   "scripts": {
     "dev": "vite",

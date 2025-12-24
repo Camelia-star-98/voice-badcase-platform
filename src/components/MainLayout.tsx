@@ -58,7 +58,7 @@ const MainLayout = () => {
             textAlign: 'center',
           }}
         >
-          {collapsed ? 'VB' : '语音Badcase平台'}
+          {collapsed ? 'TTS' : '语音TTS badcase跟进'}
         </div>
         <Menu
           theme="dark"
@@ -70,7 +70,7 @@ const MainLayout = () => {
       </Sider>
       <Layout>
         <Header style={{ padding: '0 24px', background: colorBgContainer }}>
-          <h2 style={{ margin: 0 }}>语音Badcase数据可视化平台</h2>
+          <h2 style={{ margin: 0 }}>语音TTS badcase跟进</h2>
         </Header>
         <Content style={{ margin: '24px 16px 0' }}>
           <div
