@@ -4,6 +4,7 @@ import MainLayout from './components/MainLayout';
 import HomePage from './pages/HomePage';
 import BadcaseListPage from './pages/BadcaseListPage';
 import StatusFlowPage from './pages/StatusFlowPage';
+import DataDashboardPage from './pages/DataDashboardPage';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="home" element={<HomePage />} />
           <Route path="badcase-list" element={<BadcaseListPage />} />
           <Route path="status-flow" element={<StatusFlowPage />} />
+          <Route path="data-dashboard" element={<DataDashboardPage />} />
         </Route>
       </Routes>
     </BadcaseProvider>

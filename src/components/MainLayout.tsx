@@ -5,6 +5,7 @@ import {
   HomeOutlined,
   UnorderedListOutlined,
   SwapOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 
 const { Header, Content, Sider } = Layout;
@@ -32,6 +33,11 @@ const MainLayout = () => {
       key: '/status-flow',
       icon: <SwapOutlined />,
       label: '流转状态',
+    },
+    {
+      key: '/data-dashboard',
+      icon: <BarChartOutlined />,
+      label: '数据统计',
     },
   ];
 
