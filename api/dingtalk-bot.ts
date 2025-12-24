@@ -6,6 +6,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { DingTalkCrypto } from './dingtalk-crypto';
 
 // Supabase配置
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
@@ -16,6 +17,28 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const DINGTALK_APP_KEY = process.env.DINGTALK_APP_KEY || '';
 const DINGTALK_APP_SECRET = process.env.DINGTALK_APP_SECRET || '';
 const DINGTALK_AGENT_ID = process.env.DINGTALK_AGENT_ID || '';
+const DINGTALK_TOKEN = process.env.DINGTALK_TOKEN || '';
+const DINGTALK_AES_KEY = process.env.DINGTALK_AES_KEY || '';
+const DINGTALK_CORP_ID = process.env.DINGTALK_CORP_ID || '';
+
+// 初始化加密工具
+let cryptoHelper: DingTalkCrypto | null = null;
+if (DINGTALK_TOKEN && DINGTALK_AES_KEY && DINGTALK_CORP_ID) {
+  cryptoHelper = new DingTalkCrypto(DINGTALK_TOKEN, DINGTALK_AES_KEY, DINGTALK_CORP_ID);
+  console.log('✅ 加密工具初始化成功');
+  console.log('配置状态:', {
+    tokenLength: DINGTALK_TOKEN.length,
+    aesKeyLength: DINGTALK_AES_KEY.length,
+    corpIdPrefix: DINGTALK_CORP_ID.substring(0, 8) + '...'
+  });
+} else {
+  console.error('❌ 加密工具初始化失败 - 缺少必需的环境变量');
+  console.error('环境变量状态:', {
+    hasToken: !!DINGTALK_TOKEN,
+    hasAESKey: !!DINGTALK_AES_KEY,
+    hasCorpId: !!DINGTALK_CORP_ID
+  });
+}
 
 /**
  * 验证钉钉签名
@@ -204,28 +227,101 @@ async function sendMessageToDingTalk(
  * 主处理函数
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // 设置响应头，确保快速响应
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Connection', 'keep-alive');
+  
+  const startTime = Date.now();
+  console.log(`[${new Date().toISOString()}] 收到请求:`, req.method, req.url);
+  console.log('Query参数:', req.query);
+  
   // 支持GET和POST请求
   if (req.method === 'GET') {
     // 处理钉钉的GET验证请求
     const { msg_signature, timestamp, nonce } = req.query;
     
+    console.log('处理GET请求，返回测试响应');
     // 简单响应验证
     return res.status(200).json({
       msg_signature,
       timestamp,
       nonce,
-      message: 'DingTalk bot endpoint is ready'
+      message: 'DingTalk bot endpoint is ready',
+      config: {
+        hasToken: !!DINGTALK_TOKEN,
+        hasAESKey: !!DINGTALK_AES_KEY,
+        hasCorpId: !!DINGTALK_CORP_ID,
+        hasCryptoHelper: !!cryptoHelper
+      }
     });
   }
 
   if (req.method !== 'POST') {
+    console.log('非POST请求，返回405');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const body = req.body;
+    console.log('POST请求Body:', JSON.stringify(body, null, 2));
 
-    // 处理钉钉的URL验证请求（POST方式）
+    // 处理钉钉HTTP模式的URL验证和加密消息
+    // 根据官方文档：https://open.dingtalk.com/document/development/http-callback-overview
+    // 验证请求和业务消息都会包含 encrypt 字段
+    if (body.encrypt && cryptoHelper) {
+      console.log('检测到加密消息，开始处理...');
+      const { msg_signature, timestamp, nonce, encrypt } = body;
+      
+      console.log('参数:', { msg_signature, timestamp, nonce, encrypt: encrypt.substring(0, 50) + '...' });
+      
+      // 1. 验证签名
+      console.log('开始验证签名...');
+      if (!cryptoHelper.verifySignature(msg_signature, timestamp, nonce, encrypt)) {
+        console.error('❌ 签名校验失败');
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+      console.log('✅ 签名验证通过');
+
+      // 2. 解密消息
+      try {
+        console.log('开始解密消息...');
+        const decrypted = cryptoHelper.decrypt(encrypt);
+        console.log('✅ 解密成功:', decrypted);
+        
+        // 3. 判断是否是URL验证请求
+        // URL验证时，解密后的内容通常是简单的challenge字符串或随机值
+        try {
+          const decryptedData = JSON.parse(decrypted);
+          console.log('解密后的JSON数据:', decryptedData);
+          
+          // 如果是业务消息（包含msgtype等字段），则处理业务逻辑
+          if (decryptedData.msgtype) {
+            console.log('检测到业务消息，立即返回success响应');
+            // 处理加密的业务消息（暂时返回加密响应）
+            const response = cryptoHelper.createEncryptedResponse('success', timestamp, nonce);
+            console.log('✅ 返回加密响应:', response);
+            return res.status(200).json(response);
+          }
+        } catch {
+          console.log('解密内容不是JSON，判断为URL验证请求');
+          // 解析失败说明是URL验证的随机字符串
+          // 按照官方文档要求，URL验证时需要返回加密的"success"
+        }
+        
+        // 返回加密的success响应（URL验证）
+        console.log('创建加密响应...');
+        const response = cryptoHelper.createEncryptedResponse('success', timestamp, nonce);
+        console.log('✅ 返回加密响应:', response);
+        const elapsed = Date.now() - startTime;
+        console.log(`处理完成，耗时: ${elapsed}ms`);
+        return res.status(200).json(response);
+      } catch (decryptError) {
+        console.error('❌ 解密失败:', decryptError);
+        return res.status(400).json({ error: 'Decrypt failed' });
+      }
+    }
+
+    // 处理钉钉的旧版验证请求（POST方式）
     // 钉钉企业内部应用验证时会发送这种请求
     if (body.msgtype === 'text' && body.text?.content === 'validation') {
       return res.status(200).json({
@@ -237,7 +333,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     
     // 处理空消息验证（有些情况钉钉会发这种）
-    if (!body.msgtype && !body.text) {
+    if (!body.msgtype && !body.text && !body.encrypt) {
       return res.status(200).json({
         success: true,
         message: 'Endpoint verified'

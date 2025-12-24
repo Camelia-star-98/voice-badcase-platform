@@ -19,23 +19,32 @@
 1. 在应用页面，点击 **机器人与消息推送**
 2. 开启 **机器人配置**
 3. 消息接收模式选择：**HTTP模式**
-4. 消息接收地址填入：
+4. 记录加密配置信息：
+   ```
+   Token: _________________
+   EncodingAESKey: _________________
+   CorpId: _________________
+   ```
+5. 消息接收地址填入：
    ```
    https://你的项目名.vercel.app/api/dingtalk-bot
    ```
-5. 点击 **保存**（会自动验证）
+6. 点击 **保存**（会自动验证）
 
 ### 步骤3：配置Vercel环境变量（1分钟）
 
 1. 访问 https://vercel.com
 2. 进入项目 → **Settings** → **Environment Variables**
-3. 添加以下3个变量：
+3. 添加以下6个变量：
 
-| 变量名 | 值（从步骤1获取） |
+| 变量名 | 值（从步骤1和步骤2获取） |
 |--------|------------------|
 | `DINGTALK_APP_KEY` | 你的AppKey |
 | `DINGTALK_APP_SECRET` | 你的AppSecret |
 | `DINGTALK_AGENT_ID` | 你的AgentId |
+| `DINGTALK_TOKEN` | 你的Token |
+| `DINGTALK_AES_KEY` | 你的EncodingAESKey |
+| `DINGTALK_CORP_ID` | 你的CorpId |
 
 4. 点击 **Save** → 点击 **Redeploy**
 
@@ -102,8 +111,10 @@ TTS课节ID：67890
 
 **解决方案：**
 1. 确认URL格式：`https://项目名.vercel.app/api/dingtalk-bot`
-2. 等待1-2分钟让部署生效
-3. 查看Vercel函数日志
+2. 确认已配置所有6个环境变量（包括Token、AESKey、CorpId）
+3. 等待1-2分钟让部署生效
+4. 检查Vercel函数日志是否有错误信息
+5. 确认EncodingAESKey正确（43位字符串）
 
 ### Q3：提示缺少必填字段？
 
@@ -119,9 +130,12 @@ TTS课节ID：67890
 
 ## 📚 详细文档
 
-更多细节和故障排查，请查看：
-- 📘 [完整配置指南](./DINGTALK_ENTERPRISE_SETUP.md)
-- 🔧 [API文档](./api/dingtalk-bot.ts)
+**⚠️ HTTP模式配置遇到问题？** 
+
+- 🔍 **[部署检查清单](./DINGTALK_DEPLOYMENT_CHECKLIST.md)** - 部署前必读，逐项检查配置
+- 📘 **[HTTP模式详细配置指南](./DINGTALK_HTTP_MODE_SETUP.md)** - 完整的图文教程
+- 📖 [完整配置指南](./DINGTALK_ENTERPRISE_SETUP.md)
+- 🔧 [API实现代码](./api/dingtalk-bot.ts)
 
 ---
 
