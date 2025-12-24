@@ -11,6 +11,7 @@
 - 🎯 **响应式设计**：完美适配桌面和移动端
 - 🔔 **实时同步**：多用户协作，数据实时更新
 - 📤 **Excel 导入**：支持批量上传 Badcase 数据
+- 🤖 **钉钉集成**：通过钉钉机器人快速提报问题 🆕
 
 ## 🚀 快速开始
 
@@ -73,6 +74,39 @@ npm run build
 2. 勾选 `badcases` 表
 3. 点击保存
 
+## 🤖 钉钉机器人集成
+
+支持通过钉钉机器人快速提报 Badcase，无需登录平台！
+
+### 快速配置（12分钟）
+
+1. **创建钉钉机器人**：在钉钉群中添加自定义机器人
+2. **配置环境变量**：添加 `DINGTALK_SECRET`
+3. **部署代码**：推送到 Vercel
+4. **开始使用**：在钉钉群中发送提报消息
+
+详细步骤查看：
+- 📘 [完整集成指南](./DINGTALK_INTEGRATION.md)
+- ⚡ [快速配置清单](./DINGTALK_QUICKSTART.md)
+
+### 使用示例
+
+在钉钉群中发送：
+
+```
+提报问题
+学科：英语
+分类：读音错误
+描述：A相关的单词发音不准确
+提报人：张三
+```
+
+机器人自动创建记录并回复确认 ✅
+
+### 辅助工具
+
+访问 `https://your-project.vercel.app/dingtalk-helper.html` 使用网页助手生成标准格式消息。
+
 ## 📊 数据库表结构
 
 ### badcases 表
@@ -98,6 +132,8 @@ npm run build
 ## 📖 文档
 
 - 📘 [Supabase 配置指南](./SUPABASE_SETUP.md)
+- 🤖 [钉钉机器人集成指南](./DINGTALK_INTEGRATION.md) 🆕
+- ⚡ [钉钉快速配置清单](./DINGTALK_QUICKSTART.md) 🆕
 - 📁 [数据库脚本](./database/)
 
 ## 🌐 部署
@@ -110,7 +146,13 @@ npm run build
 2. 添加环境变量：
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+   - `DINGTALK_SECRET`（可选，钉钉集成需要）
 3. 部署
+
+部署后即可访问：
+- 🏠 主平台：`https://your-project.vercel.app`
+- 🤖 钉钉助手：`https://your-project.vercel.app/dingtalk-helper.html`
+- 🔌 Webhook：`https://your-project.vercel.app/api/dingtalk-webhook`
 
 ## 📄 License
 
