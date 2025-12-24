@@ -45,6 +45,7 @@ function parseBadcaseFromMessage(text: string): any {
     category: '',
     description: '',
     reporter: '',
+    priority: 'P2', // 默认优先级
     cms_section_id: null,
     tts_section_id: null,
     model_id: null,
@@ -54,40 +55,56 @@ function parseBadcaseFromMessage(text: string): any {
   };
 
   for (const line of lines) {
-    // 跳过空行和标题行
-    if (!line || line.includes('提报问题') || line.includes('新建badcase')) {
+    // 跳过空行、标题行、模板提示
+    if (!line || 
+        line.includes('提报问题') || 
+        line.includes('新建badcase') ||
+        line.includes('【必填') ||
+        line.includes('【选填') ||
+        line.includes('———') ||
+        line.includes('💡 提示')) {
       continue;
     }
 
     if (line.includes('学科：') || line.includes('学科:')) {
-      data.subject = line.split(/[：:]/)[1]?.trim() || '';
+      data.subject = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '') || '';
     } else if (line.includes('位置：') || line.includes('位置:')) {
-      const location = line.split(/[：:]/)[1]?.trim() || '';
+      const location = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '') || '';
       // 智能识别位置
       if (location.includes('TTS') || location.includes('全流程')) {
         data.location = 'full_tts';
       } else if (location.includes('互动') || location.includes('行课')) {
         data.location = 'interactive';
-      } else {
+      } else if (location) {
         data.location = location;
+      }
+    } else if (line.includes('优先级：') || line.includes('优先级:')) {
+      const priority = line.split(/[：:]/)[1]?.trim().toUpperCase().replace(/【.*?】/g, '') || 'P2';
+      // 验证优先级格式
+      if (['P0', 'P1', 'P2'].includes(priority)) {
+        data.priority = priority;
       }
     } else if (line.includes('CMS课节ID：') || line.includes('CMS课节ID:') || 
                line.includes('课节ID：') || line.includes('课节ID:')) {
-      data.cms_section_id = line.split(/[：:]/)[1]?.trim() || null;
+      const value = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '');
+      data.cms_section_id = value || null;
     } else if (line.includes('TTS课节ID：') || line.includes('TTS课节ID:')) {
-      data.tts_section_id = line.split(/[：:]/)[1]?.trim() || null;
+      const value = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '');
+      data.tts_section_id = value || null;
     } else if (line.includes('模型ID：') || line.includes('模型ID:')) {
-      data.model_id = line.split(/[：:]/)[1]?.trim() || null;
+      const value = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '');
+      data.model_id = value || null;
     } else if (line.includes('分类：') || line.includes('分类:')) {
-      data.category = line.split(/[：:]/)[1]?.trim() || '';
+      data.category = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '') || '';
     } else if (line.includes('描述：') || line.includes('描述:') || 
                line.includes('问题描述：') || line.includes('问题描述:')) {
-      data.description = line.split(/[：:]/)[1]?.trim() || '';
+      data.description = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '') || '';
     } else if (line.includes('提报人：') || line.includes('提报人:')) {
-      data.reporter = line.split(/[：:]/)[1]?.trim() || '';
+      data.reporter = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '') || '';
     } else if (line.includes('期望修复：') || line.includes('期望修复:') || 
                line.includes('期望修复时间：') || line.includes('期望修复时间:')) {
-      data.expected_fix_date = line.split(/[：:]/)[1]?.trim() || null;
+      const value = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '');
+      data.expected_fix_date = value || null;
     }
   }
 
@@ -98,6 +115,8 @@ function parseBadcaseFromMessage(text: string): any {
       !line.includes(':') && 
       !line.includes('提报问题') &&
       !line.includes('新建badcase') &&
+      !line.includes('【') &&
+      !line.includes('———') &&
       line.length > 0
     );
     if (descLines.length > 0) {
@@ -223,11 +242,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const messageContent = body.text?.content || '';
     const senderId = body.senderId || body.senderStaffId || '';
 
-    // 检查是否是提报问题的消息
-    if (!messageContent.includes('提报问题') && !messageContent.includes('新建badcase')) {
+    // 检查是否只是请求模板（用户发送"提报问题"但没有其他内容）
+    const trimmedContent = messageContent.trim();
+    const lines = messageContent.split('\n').filter(line => line.trim());
+    
+    // 判断是否只是请求模板
+    const isTemplateRequest = 
+      (trimmedContent === '提报问题' || trimmedContent === '新建badcase') ||
+      (lines.length === 1 && (lines[0].includes('提报问题') || lines[0].includes('新建badcase')));
+    
+    if (isTemplateRequest) {
+      // 发送模板消息
+      const templateMessage = `📝 Badcase提报模板
+
+请复制以下模板，填写完整后 @我 发送：
+
+———————————————
+提报问题
+学科：【必填，如：英语/数学/语文】
+分类：【必填，如：读音错误/断句问题/语速异常】
+优先级：【选填，P0/P1/P2，默认P2】
+问题描述：【必填，详细描述问题】
+位置：【选填，如：全流程TTS/行课互动】
+提报人：【选填，您的姓名】
+CMS课节ID：【选填】
+TTS课节ID：【选填】
+模型ID：【选填】
+期望修复时间：【选填，格式：2024-12-25】
+———————————————
+
+💡 提示：
+• 【必填】字段不能为空
+• 【选填】字段可删除或留空
+• 优先级说明：
+  P0-严重影响使用
+  P1-重要需尽快修复
+  P2-一般问题正常排期`;
+
+      await sendMessageToDingTalk(senderId, templateMessage);
+      
       return res.status(200).json({
         success: true,
-        msg: '如需提报Badcase，请使用"提报问题"开头，然后换行填写各字段信息。\n\n示例：\n提报问题\n学科：英语\n分类：读音错误\n描述：具体问题描述'
+        msg: '已发送模板'
+      });
+    }
+
+    // 检查是否是提报问题的消息（包含完整信息）
+    if (!messageContent.includes('提报问题') && !messageContent.includes('新建badcase')) {
+      const helpMessage = `👋 您好！我是Badcase提报助手
+
+🔹 如需提报问题，请发送：
+   @我 提报问题
+
+🔹 我会回复模板，您填写后再 @我 发送即可
+
+🔹 查看帮助：
+   @我 帮助`;
+
+      await sendMessageToDingTalk(senderId, helpMessage);
+      
+      return res.status(200).json({
+        success: true,
+        msg: '已发送帮助信息'
       });
     }
 
@@ -279,12 +355,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 构造成功消息
+    const priorityEmoji = data.priority === 'P0' ? '🔴' : data.priority === 'P1' ? '🟡' : '🟢';
     const successMessage = `✅ Badcase提报成功！
 
 📋 ID: ${data.id}
 📚 学科: ${data.subject}
 📂 分类: ${data.category}
-${data.location ? `📍 位置: ${data.location === 'full_tts' ? '全流程TTS' : '行课互动'}` : ''}
+${priorityEmoji} 优先级: ${data.priority}
+${data.location ? `📍 位置: ${data.location === 'full_tts' ? '全流程TTS' : data.location === 'interactive' ? '行课互动' : data.location}` : ''}
 ${data.reporter ? `👤 提报人: ${data.reporter}` : ''}
 ${data.cms_section_id ? `🆔 CMS课节ID: ${data.cms_section_id}` : ''}
 
