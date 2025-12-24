@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Card, Space, Tag, Input, Select, Button, Modal, Descriptions, message, Popconfirm } from 'antd';
+import { Table, Card, Space, Tag, Input, Select, Button, Modal, message, Popconfirm, DatePicker } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined, EyeOutlined, PlayCircleOutlined, LockOutlined, DeleteOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
 import { getSubjectList, getSubjectLabel } from '../config/subjectModelMapping';
 import { useBadcase } from '../contexts/BadcaseContext';
 import AudioPlayer from '../components/AudioPlayer';
+import dayjs from 'dayjs';
 import './BadcaseListPage.css';
 
 const { Option } = Select;
@@ -22,12 +23,15 @@ const StatusFlowPage = () => {
   const [searchText, setSearchText] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedRecord, setSelectedRecord] = useState<BadcaseData | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [audioPlayerVisible, setAudioPlayerVisible] = useState(false);
   const [currentAudioUrl, setCurrentAudioUrl] = useState('');
   const [currentRecordId, setCurrentRecordId] = useState('');
+  
+  // 编辑模式状态
+  const [editedRecord, setEditedRecord] = useState<BadcaseData | null>(null);
+  const [saving, setSaving] = useState(false);
   
   // 密码验证相关状态
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -56,28 +60,6 @@ const StatusFlowPage = () => {
       message.error('密码错误，请重试！');
       setPassword('');
     }
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      resolved: 'success',
-      algorithm_processing: 'processing',
-      engineering_processing: 'warning',
-      pending: 'default',
-    };
-    return colors[status as keyof typeof colors] || 'default';
-  };
-
-  const getStatusText = (status: string) => {
-    const texts = {
-      resolved: '已解决',
-      algorithm_processing: '算法处理中',
-      engineering_processing: '工程处理中',
-      pending: '待处理',
-      // 兼容旧数据
-      processing: '处理中',
-    };
-    return texts[status as keyof typeof texts] || status;
   };
 
   // 同步 badcaseList 到 dataSource，并按ID降序排列（新到旧）
@@ -278,7 +260,7 @@ const StatusFlowPage = () => {
   ];
 
   const handleViewDetail = (record: BadcaseData) => {
-    setSelectedRecord(record);
+    setEditedRecord(record); // 初始化编辑数据
     setDetailModalVisible(true);
   };
 
@@ -290,6 +272,34 @@ const StatusFlowPage = () => {
     } else {
       message.warning('该记录没有上传音频文件');
     }
+  };
+
+  // 保存编辑
+  const handleSave = async () => {
+    if (!editedRecord) return;
+    
+    setSaving(true);
+    try {
+      // 更新数据
+      await updateBadcase(editedRecord.id, editedRecord);
+      message.success('保存成功');
+      setDetailModalVisible(false);
+      setEditedRecord(null);
+    } catch (error) {
+      console.error('保存失败:', error);
+      message.error('保存失败，请重试');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 更新编辑数据
+  const handleFieldChange = (field: keyof BadcaseData, value: any) => {
+    if (!editedRecord) return;
+    setEditedRecord({
+      ...editedRecord,
+      [field]: value,
+    });
   };
 
   const handleSearch = () => {
@@ -460,82 +470,207 @@ const StatusFlowPage = () => {
       <Modal
         title="Badcase详情"
         open={detailModalVisible}
-        onCancel={() => setDetailModalVisible(false)}
+        onCancel={() => {
+          setDetailModalVisible(false);
+          setEditedRecord(null);
+        }}
         footer={[
-          <Button key="close" onClick={() => setDetailModalVisible(false)}>
-            关闭
+          <Button key="cancel" onClick={() => {
+            setDetailModalVisible(false);
+            setEditedRecord(null);
+          }}>
+            取消
+          </Button>,
+          <Button key="save" type="primary" loading={saving} onClick={handleSave}>
+            保存
           </Button>,
         ]}
-        width={700}
+        width={800}
       >
-        {selectedRecord && (
-          <Descriptions bordered column={2}>
-            <Descriptions.Item label="ID" span={2}>
-              {selectedRecord.id}
-            </Descriptions.Item>
-            <Descriptions.Item label="提交日期" span={2}>
-              {selectedRecord.date}
-            </Descriptions.Item>
-            <Descriptions.Item label="学科" span={2}>
-              {selectedRecord.subject ? getSubjectLabel(selectedRecord.subject) : '未分类'}
-            </Descriptions.Item>
-            <Descriptions.Item label="出现位置" span={2}>
-              {selectedRecord.location === 'fullTTS' 
-                ? '全程TTS做课部分' 
-                : selectedRecord.location === 'interactive' 
-                ? '行课互动部分' 
-                : '未填写'}
-            </Descriptions.Item>
-            {selectedRecord.location === 'fullTTS' && selectedRecord.fullTtsLessonId && (
-              <Descriptions.Item label="全程TTS课节ID" span={2}>
-                {selectedRecord.fullTtsLessonId}
-              </Descriptions.Item>
-            )}
-            {selectedRecord.location === 'interactive' && selectedRecord.cmsId && (
-              <Descriptions.Item label="CMS课节ID" span={2}>
-                {selectedRecord.cmsId}
-              </Descriptions.Item>
-            )}
-            <Descriptions.Item label="问题提报人" span={2}>
-              {selectedRecord.reporter || '未填写'}
-            </Descriptions.Item>
-            {selectedRecord.location === 'interactive' && (
-              <Descriptions.Item label="问题模型ID" span={2}>
-                {selectedRecord.modelId || '未填写'}
-              </Descriptions.Item>
-            )}
-            <Descriptions.Item label="分类">
-              {selectedRecord.category}
-            </Descriptions.Item>
-            <Descriptions.Item label="期望修复时间">
-              {selectedRecord.expectedFixDate}
-            </Descriptions.Item>
-            <Descriptions.Item label="状态" span={2}>
-              <Tag color={getStatusColor(selectedRecord.status)}>
-                {getStatusText(selectedRecord.status)}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="描述" span={2}>
-              {selectedRecord.description}
-            </Descriptions.Item>
-            <Descriptions.Item label="创建时间" span={2}>
-              {selectedRecord.createdAt}
-            </Descriptions.Item>
-            <Descriptions.Item label="更新时间" span={2}>
-              {selectedRecord.updatedAt}
-            </Descriptions.Item>
-            {selectedRecord.audioUrl && (
-              <Descriptions.Item label="音频文件" span={2}>
-                <Button
-                  type="link"
-                  icon={<PlayCircleOutlined />}
-                  onClick={() => handlePlayAudio(selectedRecord)}
+        {editedRecord && (
+          <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              {/* ID - 不可编辑 */}
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>ID</div>
+                <Input value={editedRecord.id} disabled />
+              </div>
+
+              {/* 提交日期 */}
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>提交日期</div>
+                <DatePicker
+                  value={dayjs(editedRecord.date)}
+                  onChange={(date) => handleFieldChange('date', date?.format('YYYY-MM-DD'))}
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD"
+                />
+              </div>
+
+              {/* 学科 */}
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>学科</div>
+                <Select
+                  value={editedRecord.subject}
+                  onChange={(value) => handleFieldChange('subject', value)}
+                  style={{ width: '100%' }}
                 >
-                  播放音频
-                </Button>
-              </Descriptions.Item>
-            )}
-          </Descriptions>
+                  {getSubjectList().map(subject => (
+                    <Option key={subject.value} value={subject.value}>
+                      {subject.label}
+                    </Option>
+                  ))}
+                </Select>
+              </div>
+
+              {/* 出现位置 */}
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>出现位置</div>
+                <Select
+                  value={editedRecord.location}
+                  onChange={(value) => handleFieldChange('location', value)}
+                  style={{ width: '100%' }}
+                >
+                  <Option value="fullTTS">全程TTS做课部分</Option>
+                  <Option value="interactive">行课互动部分</Option>
+                </Select>
+              </div>
+
+              {/* CMS课节ID */}
+              {editedRecord.location === 'interactive' && (
+                <div>
+                  <div style={{ marginBottom: 8, fontWeight: 500 }}>CMS课节ID</div>
+                  <Input
+                    value={editedRecord.cmsId}
+                    onChange={(e) => handleFieldChange('cmsId', e.target.value)}
+                    placeholder="请输入CMS课节ID"
+                  />
+                </div>
+              )}
+
+              {/* 全程TTS课节ID */}
+              {editedRecord.location === 'fullTTS' && (
+                <div>
+                  <div style={{ marginBottom: 8, fontWeight: 500 }}>全程TTS课节ID</div>
+                  <Input
+                    value={editedRecord.fullTtsLessonId}
+                    onChange={(e) => handleFieldChange('fullTtsLessonId', e.target.value)}
+                    placeholder="请输入全程TTS课节ID"
+                  />
+                </div>
+              )}
+
+              {/* 问题提报人 */}
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>问题提报人</div>
+                <Input
+                  value={editedRecord.reporter}
+                  onChange={(e) => handleFieldChange('reporter', e.target.value)}
+                  placeholder="请输入问题提报人"
+                />
+              </div>
+
+              {/* 问题模型ID */}
+              {editedRecord.location === 'interactive' && (
+                <div>
+                  <div style={{ marginBottom: 8, fontWeight: 500 }}>问题模型ID</div>
+                  <Input
+                    value={editedRecord.modelId}
+                    onChange={(e) => handleFieldChange('modelId', e.target.value)}
+                    placeholder="请输入问题模型ID"
+                  />
+                </div>
+              )}
+
+              {/* 分类 */}
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>分类</div>
+                <Select
+                  value={editedRecord.category}
+                  onChange={(value) => handleFieldChange('category', value)}
+                  style={{ width: '100%' }}
+                >
+                  <Option value="读音错误">读音错误</Option>
+                  <Option value="停顿不当">停顿不当</Option>
+                  <Option value="重读不对">重读不对</Option>
+                  <Option value="语速突变">语速突变</Option>
+                  <Option value="音量突变">音量突变</Option>
+                  <Option value="音质问题">音质问题</Option>
+                  <Option value="其他">其他</Option>
+                </Select>
+              </div>
+
+              {/* 期望修复时间 */}
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>期望修复时间</div>
+                <DatePicker
+                  value={dayjs(editedRecord.expectedFixDate)}
+                  onChange={(date) => handleFieldChange('expectedFixDate', date?.format('YYYY-MM-DD'))}
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD"
+                />
+              </div>
+
+              {/* 状态 */}
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>状态</div>
+                <Select
+                  value={editedRecord.status}
+                  onChange={(value) => handleFieldChange('status', value)}
+                  style={{ width: '100%' }}
+                >
+                  <Option value="pending">
+                    <Tag color="default">待处理</Tag>
+                  </Option>
+                  <Option value="algorithm_processing">
+                    <Tag color="processing">算法处理中</Tag>
+                  </Option>
+                  <Option value="engineering_processing">
+                    <Tag color="warning">工程处理中</Tag>
+                  </Option>
+                  <Option value="resolved">
+                    <Tag color="success">已解决</Tag>
+                  </Option>
+                </Select>
+              </div>
+
+              {/* 描述 */}
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>描述</div>
+                <Input.TextArea
+                  value={editedRecord.description}
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
+                  placeholder="请输入问题描述"
+                  rows={4}
+                />
+              </div>
+
+              {/* 创建时间和更新时间 - 只读 */}
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>创建时间</div>
+                <Input value={editedRecord.createdAt} disabled />
+              </div>
+
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>更新时间</div>
+                <Input value={editedRecord.updatedAt} disabled />
+              </div>
+
+              {/* 音频文件 */}
+              {editedRecord.audioUrl && (
+                <div>
+                  <div style={{ marginBottom: 8, fontWeight: 500 }}>音频文件</div>
+                  <Button
+                    type="link"
+                    icon={<PlayCircleOutlined />}
+                    onClick={() => handlePlayAudio(editedRecord)}
+                  >
+                    播放音频
+                  </Button>
+                </div>
+              )}
+            </Space>
+          </div>
         )}
       </Modal>
 
