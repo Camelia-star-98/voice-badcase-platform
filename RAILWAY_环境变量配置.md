@@ -1,330 +1,178 @@
-# 🔐 Railway 环境变量配置 - 完整清单
+# 🔐 Railway 环境变量配置指南
 
-## 📋 配置位置
-
-Railway 项目 → 点击 **Variables** 标签 → 逐个添加以下变量
+> **💡 好消息**：服务器已修复！现在即使没有配置环境变量，服务器也能正常启动。
 
 ---
 
-## 1️⃣ Supabase 数据库配置（2个）
+## 📍 配置位置
 
-### `VITE_SUPABASE_URL`
+**Railway 项目页面** → 点击 **Variables** 标签 → 点击 **Add Variable** 添加
+
+---
+
+## ✅ 最小配置（2 个变量即可启动）
+
+### 1. `VITE_SUPABASE_URL` ⭐ 必需
 ```
-请填写你的 Supabase URL
+你的 Supabase 项目 URL
 格式：https://xxxxx.supabase.co
 ```
 
-### `VITE_SUPABASE_ANON_KEY`
+### 2. `VITE_SUPABASE_ANON_KEY` ⭐ 必需
 ```
-请填写你的 Supabase Anon Key
-格式：eyJhbGci... (很长的JWT token)
+你的 Supabase Anon Key
+格式：eyJhbGci... (很长的 JWT token)
 ```
 
-**📝 获取方式：**
-1. 登录 https://supabase.com/dashboard
-2. 选择项目 → **Settings** → **API**
-3. 复制 **Project URL** 和 **anon public** key
+**🔍 如何获取：**
+1. 打开 https://supabase.com/dashboard
+2. 选择你的项目 `voice-badcase-platform`
+3. 左侧菜单：**Settings** → **API**
+4. 复制：
+   - **Project URL** → `VITE_SUPABASE_URL`
+   - **anon public** key → `VITE_SUPABASE_ANON_KEY`
+
+配置这 2 个变量后，服务器就能正常运行，数据库功能可用！✅
 
 ---
 
-## 2️⃣ 钉钉机器人配置（6个）
+## 🤖 钉钉机器人配置（可选，5 个变量）
 
-### `DINGTALK_APP_KEY`
-```
-请填写你的钉钉 AppKey
-从钉钉开发者后台获取
-```
+如果你需要钉钉机器人提报 Badcase 的功能，再添加这些：
 
-### `DINGTALK_APP_SECRET`
+### 3. `VITE_DINGTALK_APP_KEY`
 ```
-请填写你的钉钉 AppSecret
-从钉钉开发者后台获取
+钉钉 AppKey
 ```
 
-### `DINGTALK_AGENT_ID`
+### 4. `VITE_DINGTALK_APP_SECRET`
 ```
-请填写你的钉钉 AgentId
-从钉钉开发者后台获取
-```
-
-### `DINGTALK_CORP_ID`
-```
-请填写你的钉钉 CorpId
-从钉钉开发者后台 → 机器人配置 → 加密配置获取
+钉钉 AppSecret
 ```
 
-### `DINGTALK_TOKEN`
+### 5. `VITE_DINGTALK_AGENT_ID`
 ```
-请填写你的钉钉 Token
-从钉钉开发者后台 → 机器人配置 → 加密配置获取
-```
-
-### `DINGTALK_AES_KEY`
-```
-请填写你的钉钉 EncodingAESKey
-从钉钉开发者后台 → 机器人配置 → 加密配置获取
-注意：这是一个43位的字符串
+钉钉 AgentId
 ```
 
-**📝 获取方式：**
-1. 登录 https://open-dev.dingtalk.com
-2. 进入你的应用
-3. **基本信息** 页面获取：
-   - AppKey
-   - AppSecret
-   - AgentId
-4. **机器人与消息推送** 页面获取：
-   - CorpId
-   - Token
-   - EncodingAESKey（AES Key）
+### 6. `VITE_DINGTALK_CORP_ID`
+```
+钉钉企业 ID (CorpId)
+```
+
+### 7. `VITE_DINGTALK_ENCODING_AES_KEY`
+```
+钉钉加密密钥 (EncodingAESKey)
+```
+
+**🔍 如何获取：**
+1. 登录钉钉开发者后台：https://open-dev.dingtalk.com
+2. 选择你的应用
+3. **开发管理** → **基础信息**：复制 AppKey、AppSecret、AgentId
+4. **开发管理** → **事件与回调**：复制 Token、EncodingAESKey
+5. **企业管理**：获取 CorpId
 
 ---
 
-## 3️⃣ Node.js 运行环境（2个）
+## 🚀 配置后的验证
 
-### `NODE_ENV`
+### 1. 保存变量
+添加完所有变量后，Railway 会自动重新部署（约 2-3 分钟）
+
+### 2. 查看部署状态
+Railway 项目页面 → **Deployments** 标签 → 点击最新部署 → **View Logs**
+
+### 3. 检查日志（应该看到）
 ```
-production
-```
-
-### `PORT`
-```
-3000
-```
-
----
-
-## 📊 完整配置清单（10个变量）
-
-| 序号 | 变量名 | 值 | 来源 |
-|------|--------|-----|------|
-| 1 | `VITE_SUPABASE_URL` | 你的值 | Supabase Dashboard |
-| 2 | `VITE_SUPABASE_ANON_KEY` | 你的值 | Supabase Dashboard |
-| 3 | `DINGTALK_APP_KEY` | 你的值 | 钉钉开发者后台 |
-| 4 | `DINGTALK_APP_SECRET` | 你的值 | 钉钉开发者后台 |
-| 5 | `DINGTALK_AGENT_ID` | 你的值 | 钉钉开发者后台 |
-| 6 | `DINGTALK_CORP_ID` | 你的值 | 钉钉机器人配置 |
-| 7 | `DINGTALK_TOKEN` | 你的值 | 钉钉机器人配置 |
-| 8 | `DINGTALK_AES_KEY` | 你的值 | 钉钉机器人配置 |
-| 9 | `NODE_ENV` | `production` | 固定值 |
-| 10 | `PORT` | `3000` | 固定值 |
-
----
-
-## 🎯 配置步骤（逐步操作）
-
-### 第 1 步：打开 Railway 项目
-1. 访问 https://railway.app
-2. 进入你的项目：`voice-badcase-platform`
-3. 点击顶部的 **Variables** 标签
-
-### 第 2 步：添加 Supabase 变量
-
-**添加第 1 个变量：**
-- Variable name: `VITE_SUPABASE_URL`
-- Value: `你的 Supabase URL`（从 Supabase Dashboard 复制）
-- 点击 **Add**
-
-**添加第 2 个变量：**
-- Variable name: `VITE_SUPABASE_ANON_KEY`
-- Value: `你的 Supabase Anon Key`（从 Supabase Dashboard 复制）
-- 点击 **Add**
-
-### 第 3 步：添加钉钉变量
-
-**依次添加以下 6 个变量：**
-
-1. Variable name: `DINGTALK_APP_KEY`
-   - Value: `从钉钉后台复制`
-
-2. Variable name: `DINGTALK_APP_SECRET`
-   - Value: `从钉钉后台复制`
-
-3. Variable name: `DINGTALK_AGENT_ID`
-   - Value: `从钉钉后台复制`
-
-4. Variable name: `DINGTALK_CORP_ID`
-   - Value: `从钉钉机器人配置复制`
-
-5. Variable name: `DINGTALK_TOKEN`
-   - Value: `从钉钉机器人配置复制`
-
-6. Variable name: `DINGTALK_AES_KEY`
-   - Value: `从钉钉机器人配置复制`（43位字符）
-
-### 第 4 步：添加运行环境变量
-
-**添加第 9 个变量：**
-- Variable name: `NODE_ENV`
-- Value: `production`
-- 点击 **Add**
-
-**添加第 10 个变量：**
-- Variable name: `PORT`
-- Value: `3000`
-- 点击 **Add**
-
-### 第 5 步：保存并等待重新部署
-
-✅ Railway 会自动检测到环境变量变化
-✅ 自动触发重新部署
-✅ 约 2-3 分钟完成
-
----
-
-## 🔍 如何验证配置正确？
-
-### 方法 1：访问健康检查端点
-
-部署完成后访问：
-```
-https://你的railway域名.up.railway.app/health
-```
-
-**期望看到：**
-```json
-{
-  "status": "ok",
-  "timestamp": "2024-12-25T12:00:00.000Z",
-  "config": {
-    "hasSupabase": true,      // ✅ 应该是 true
-    "hasDingTalk": true,      // ✅ 应该是 true
-    "hasCrypto": true         // ✅ 应该是 true
-  }
-}
-```
-
-### 方法 2：查看 Railway 日志
-
-1. 在 Railway 项目页面点击 **Deployments**
-2. 选择最新的部署
-3. 点击 **View Logs**
-4. 查找以下日志：
-
-```
+Node.js v18.20.8
+✅ Supabase 客户端初始化成功
 ✅ 加密工具初始化成功
 🚀 服务器启动成功！
 📍 监听端口: 3000
+🌐 环境: production
 ✅ Supabase: 已配置
 ✅ 钉钉: 已配置
 ```
 
----
-
-## ⚠️ 常见配置错误
-
-### 错误 1：环境变量名称拼写错误
-
-❌ **错误示例：**
-- `VITE_SUPABASE_URl`（少了一个L）
-- `DINGTALK_TOKEN_`（多了下划线）
-- `dingtalk_app_key`（小写，应该全大写）
-
-✅ **正确做法：**
-- 完全按照上面清单复制粘贴变量名
-- 变量名区分大小写
-- 不要有多余的空格
-
-### 错误 2：环境变量值有空格
-
-❌ **错误示例：**
+### 4. 访问健康检查
+打开浏览器访问：
 ```
-VITE_SUPABASE_URL = https://xxx.supabase.co
-（注意等号两边有空格）
+https://你的railway域名.up.railway.app/health
 ```
 
-✅ **正确做法：**
-- Railway 会自动处理，但建议值前后不要有空格
-- 直接从源头复制，不要手动输入
-
-### 错误 3：AES Key 不是 43 位
-
-❌ **错误：**
-- 复制时少了字符
-- 复制时多了换行符
-
-✅ **正确做法：**
-- 确认 `DINGTALK_AES_KEY` 长度正好是 43 位
-- 从钉钉后台直接复制，不要手动编辑
-
----
-
-## 📝 配置来源参考
-
-### Supabase 配置位置
-
-```
-Supabase Dashboard
-└── 选择你的项目
-    └── Settings
-        └── API
-            ├── Project URL → VITE_SUPABASE_URL
-            └── Project API keys
-                └── anon public → VITE_SUPABASE_ANON_KEY
-```
-
-### 钉钉配置位置
-
-```
-钉钉开发者后台 (open-dev.dingtalk.com)
-└── 你的应用
-    ├── 应用信息
-    │   ├── AppKey → DINGTALK_APP_KEY
-    │   ├── AppSecret → DINGTALK_APP_SECRET
-    │   └── AgentId → DINGTALK_AGENT_ID
-    │
-    └── 机器人与消息推送
-        └── 加密配置
-            ├── Token → DINGTALK_TOKEN
-            ├── EncodingAESKey → DINGTALK_AES_KEY
-            └── CorpId → DINGTALK_CORP_ID
+**期望返回：**
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-12-25T11:32:34.567Z",
+  "config": {
+    "hasSupabase": true,
+    "hasDingTalk": true,
+    "hasCrypto": true
+  }
+}
 ```
 
 ---
 
-## ✅ 配置完成后的检查清单
+## 📊 配置清单总结
 
-- [ ] 已添加全部 10 个环境变量
-- [ ] 变量名拼写完全正确（区分大小写）
-- [ ] 变量值从源头复制，无多余空格
-- [ ] `DINGTALK_AES_KEY` 长度为 43 位
-- [ ] Railway 已自动触发重新部署
-- [ ] 访问 `/health` 端点，三个配置都是 `true`
-- [ ] 查看日志，无报错信息
-- [ ] 钉钉回调 URL 已更新
-- [ ] 在钉钉中测试提交成功
+| 变量名 | 是否必需 | 说明 |
+|--------|---------|------|
+| `VITE_SUPABASE_URL` | ✅ 必需 | Supabase 项目 URL |
+| `VITE_SUPABASE_ANON_KEY` | ✅ 必需 | Supabase 公共 Key |
+| `VITE_DINGTALK_APP_KEY` | 🟡 可选 | 钉钉 AppKey |
+| `VITE_DINGTALK_APP_SECRET` | 🟡 可选 | 钉钉 AppSecret |
+| `VITE_DINGTALK_AGENT_ID` | 🟡 可选 | 钉钉 AgentId |
+| `VITE_DINGTALK_CORP_ID` | 🟡 可选 | 钉钉企业 ID |
+| `VITE_DINGTALK_ENCODING_AES_KEY` | 🟡 可选 | 钉钉加密密钥 |
+
+**总共：2 个必需 + 5 个可选 = 7 个环境变量**
+
+---
+
+## 💡 环境变量命名说明
+
+服务器支持多种变量名格式（带或不带 `VITE_` 前缀），例如：
+
+- `VITE_SUPABASE_URL` 或 `SUPABASE_URL` ✅ 都支持
+- `VITE_DINGTALK_APP_KEY` 或 `DINGTALK_APP_KEY` ✅ 都支持
+
+**推荐使用 `VITE_` 前缀**，这样前端构建时也能访问这些变量。
 
 ---
 
 ## 🆘 遇到问题？
 
-### 问题：`/health` 显示 `hasSupabase: false`
-**解决：** 检查 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_ANON_KEY` 是否正确
+### ❌ 服务器启动失败
+**检查：**
+- 确保 `VITE_SUPABASE_URL` 格式正确（必须以 `https://` 开头，以 `.supabase.co` 结尾）
+- 确保 `VITE_SUPABASE_ANON_KEY` 是完整的 JWT token（通常以 `eyJ` 开头）
+- 查看 Railway 部署日志，搜索错误信息
 
-### 问题：`/health` 显示 `hasDingTalk: false`
-**解决：** 检查 6 个 `DINGTALK_*` 变量是否都已添加
+### ⚠️ 钉钉机器人不工作
+**检查：**
+- 确保所有 5 个钉钉变量都已配置
+- 检查钉钉开发者后台的回调 URL 是否正确设置为：
+  ```
+  https://你的railway域名.up.railway.app/api/dingtalk-bot
+  ```
+- 查看 `/health` 端点，确认 `hasCrypto: true`
 
-### 问题：`/health` 显示 `hasCrypto: false`
-**解决：** 检查 `DINGTALK_TOKEN`、`DINGTALK_AES_KEY`、`DINGTALK_CORP_ID` 是否正确
-
-### 问题：钉钉回调验证失败
-**解决：**
-1. 确认所有钉钉变量已配置
-2. 确认 `DINGTALK_AES_KEY` 是 43 位
-3. 等待部署完成（2-3分钟）
-4. 查看 Railway 日志是否有错误
+### 🔄 修改变量后没生效
+**操作：**
+1. 确认变量已保存
+2. Railway 会自动重新部署，等待 2-3 分钟
+3. 刷新浏览器清除缓存
 
 ---
 
-## 🎉 配置完成！
+## 📚 相关文档
 
-所有环境变量配置完成后，你的应用就可以正常运行了！
+- [Supabase 完整配置](./SUPABASE_SETUP.md)
+- [钉钉机器人快速开始](./DINGTALK_QUICKSTART.md)
+- [Dockerfile 说明](./Dockerfile)
 
-**下一步：**
-1. 等待 Railway 重新部署完成
-2. 访问 `/health` 验证配置
-3. 更新钉钉回调 URL
-4. 在钉钉中测试提交
+---
 
-祝使用愉快！🚀
-
+**🎉 配置完成后，你的 Badcase 平台就可以正常使用了！**
