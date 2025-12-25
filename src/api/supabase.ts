@@ -1,8 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase 配置
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// 扩展 Window 接口以支持 ENV
+declare global {
+  interface Window {
+    ENV?: {
+      VITE_SUPABASE_URL?: string;
+      VITE_SUPABASE_ANON_KEY?: string;
+      VITE_DINGTALK_APP_KEY?: string;
+      VITE_DINGTALK_APP_SECRET?: string;
+      VITE_DINGTALK_AGENT_ID?: string;
+      VITE_DINGTALK_CORP_ID?: string;
+      VITE_DINGTALK_ENCODING_AES_KEY?: string;
+    };
+  }
+}
+
+// Supabase 配置 - 优先从 window.ENV 读取（Railway 运行时注入），其次从 import.meta.env（本地开发）
+const supabaseUrl = (typeof window !== 'undefined' && window.ENV?.VITE_SUPABASE_URL) || import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = (typeof window !== 'undefined' && window.ENV?.VITE_SUPABASE_ANON_KEY) || import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 console.log('🔍 Supabase 环境变量检查:');
 console.log('VITE_SUPABASE_URL:', supabaseUrl ? `✅ 已设置 (${supabaseUrl})` : '❌ 未设置');

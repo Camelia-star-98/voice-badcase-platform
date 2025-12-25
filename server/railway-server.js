@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { DingTalkCrypto } from '../api/dingtalk-crypto.js';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +47,35 @@ let cryptoHelper = null;
 if (DINGTALK_TOKEN && DINGTALK_AES_KEY && DINGTALK_CORP_ID) {
   cryptoHelper = new DingTalkCrypto(DINGTALK_TOKEN, DINGTALK_AES_KEY, DINGTALK_CORP_ID);
   console.log('✅ 加密工具初始化成功');
+}
+
+// 读取并处理 index.html，注入环境变量
+let indexHtmlCache = null;
+function getIndexHtml() {
+  if (indexHtmlCache) return indexHtmlCache;
+  
+  const indexPath = path.join(__dirname, '../dist/index.html');
+  let html = fs.readFileSync(indexPath, 'utf-8');
+  
+  // 在 <head> 中注入环境变量
+  const envScript = `
+    <script>
+      window.ENV = {
+        VITE_SUPABASE_URL: '${supabaseUrl || ''}',
+        VITE_SUPABASE_ANON_KEY: '${supabaseKey || ''}',
+        VITE_DINGTALK_APP_KEY: '${DINGTALK_APP_KEY || ''}',
+        VITE_DINGTALK_APP_SECRET: '${DINGTALK_APP_SECRET || ''}',
+        VITE_DINGTALK_AGENT_ID: '${DINGTALK_AGENT_ID || ''}',
+        VITE_DINGTALK_CORP_ID: '${DINGTALK_CORP_ID || ''}',
+        VITE_DINGTALK_ENCODING_AES_KEY: '${DINGTALK_AES_KEY || ''}'
+      };
+    </script>
+  `;
+  
+  html = html.replace('</head>', `${envScript}</head>`);
+  indexHtmlCache = html;
+  
+  return html;
 }
 
 // 日志中间件
@@ -469,9 +499,10 @@ ${data.expected_fix_date ? `⏰ 期望修复时间: ${data.expected_fix_date}` :
 // 静态文件服务（前端）
 app.use(express.static(path.join(__dirname, '../dist')));
 
-// 所有其他路由返回 index.html（SPA）
+// 所有其他路由返回动态注入环境变量的 index.html（SPA）
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
+  res.setHeader('Content-Type', 'text/html');
+  res.send(getIndexHtml());
 });
 
 // 启动服务器
