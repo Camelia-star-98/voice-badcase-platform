@@ -22,6 +22,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Supabase 配置
+console.log('🔍 检查 Supabase 环境变量:');
+console.log('  SUPABASE_URL:', process.env.SUPABASE_URL ? `✅ ${process.env.SUPABASE_URL}` : '❌ 未设置');
+console.log('  VITE_SUPABASE_URL:', process.env.VITE_SUPABASE_URL ? `✅ ${process.env.VITE_SUPABASE_URL}` : '❌ 未设置');
+console.log('  SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ 已设置' : '❌ 未设置');
+console.log('  VITE_SUPABASE_ANON_KEY:', process.env.VITE_SUPABASE_ANON_KEY ? '✅ 已设置' : '❌ 未设置');
+
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 
@@ -35,6 +41,12 @@ if (supabaseUrl && supabaseKey) {
 }
 
 // 钉钉配置
+console.log('🔍 检查钉钉环境变量:');
+console.log('  DINGTALK_APP_KEY:', process.env.DINGTALK_APP_KEY ? '✅ 已设置' : '❌ 未设置');
+console.log('  VITE_DINGTALK_APP_KEY:', process.env.VITE_DINGTALK_APP_KEY ? '✅ 已设置' : '❌ 未设置');
+console.log('  DINGTALK_TOKEN:', process.env.DINGTALK_TOKEN ? '✅ 已设置' : '❌ 未设置');
+console.log('  VITE_DINGTALK_TOKEN:', process.env.VITE_DINGTALK_TOKEN ? '✅ 已设置' : '❌ 未设置');
+
 const DINGTALK_APP_KEY = process.env.VITE_DINGTALK_APP_KEY || process.env.DINGTALK_APP_KEY || '';
 const DINGTALK_APP_SECRET = process.env.VITE_DINGTALK_APP_SECRET || process.env.DINGTALK_APP_SECRET || '';
 const DINGTALK_AGENT_ID = process.env.VITE_DINGTALK_AGENT_ID || process.env.DINGTALK_AGENT_ID || '';
