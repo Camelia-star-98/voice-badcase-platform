@@ -15,37 +15,54 @@
 
 ## 🚀 快速开始
 
-### 1. 安装依赖
+### 1. 克隆项目（新成员）
+
+```bash
+# 克隆仓库
+git clone https://github.com/Camelia-star-98/voice-badcase-platform.git
+cd voice-badcase-platform
+```
+
+### 2. 安装依赖
 
 ```bash
 npm install
 ```
 
-### 2. 配置 Supabase
+### 3. 配置环境变量
 
-按照 [Supabase 配置指南](./SUPABASE_SETUP.md) 完成以下步骤：
+```bash
+# 复制环境变量模板
+cp .env.example .env.local
 
-1. 创建 Supabase 项目
+# 编辑 .env.local，填入真实配置
+# 配置值请联系项目负责人获取
+```
+
+按照 [Supabase 配置指南](./SUPABASE_SETUP.md) 获取配置：
+
+1. 创建 Supabase 项目（或使用现有项目）
 2. 执行数据库初始化脚本（`database/create_badcases_table.sql`）
 3. 获取 API 凭证
-4. 配置环境变量
+4. 填入 `.env.local` 文件
 
-创建 `.env.local` 文件：
+**示例 `.env.local` 内容**：
 
 ```env
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
+DINGTALK_SECRET=your-dingtalk-secret  # 可选
 ```
 
-### 3. 启动开发服务器
+### 4. 启动开发服务器
 
 ```bash
 npm run dev
 ```
 
-访问 http://localhost:3000
+访问 http://localhost:5173
 
-### 4. 构建生产版本
+### 5. 构建生产版本
 
 ```bash
 npm run build
@@ -132,9 +149,51 @@ npm run build
 ## 📖 文档
 
 - 📘 [Supabase 配置指南](./SUPABASE_SETUP.md)
-- 🤖 [钉钉机器人集成指南](./DINGTALK_INTEGRATION.md) 🆕
-- ⚡ [钉钉快速配置清单](./DINGTALK_QUICKSTART.md) 🆕
+- 🤝 [团队协作指南](./CONTRIBUTING.md) - **新成员必读** 🆕
+- 🤖 [钉钉机器人集成指南](./DINGTALK_INTEGRATION.md)
+- ⚡ [钉钉快速配置清单](./DINGTALK_QUICKSTART.md)
 - 📁 [数据库脚本](./database/)
+
+---
+
+## 👥 团队协作
+
+### 添加协作者
+
+项目负责人可以在 GitHub 仓库设置中添加团队成员：
+
+1. 进入仓库 Settings → Collaborators
+2. 点击 "Add people"
+3. 输入成员的 GitHub 用户名
+
+### 新成员上手
+
+新成员请查看 [团队协作指南](./CONTRIBUTING.md)，包含：
+- ✅ 环境配置步骤
+- ✅ Git 工作流程
+- ✅ 代码规范
+- ✅ 常见问题解答
+
+### 协作工作流
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/Camelia-star-98/voice-badcase-platform.git
+
+# 2. 创建功能分支
+git checkout -b feature/your-feature
+
+# 3. 开发并提交
+git add .
+git commit -m "feat: 添加新功能"
+
+# 4. 推送并创建 Pull Request
+git push origin feature/your-feature
+```
+
+更多详情请查看 [CONTRIBUTING.md](./CONTRIBUTING.md)
+
+---
 
 ## 🌐 部署
 

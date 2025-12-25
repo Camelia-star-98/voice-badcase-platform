@@ -31,3 +31,41 @@ dist-ssr
 
 # Vercel
 .vercel
+
+# Railway
+.railway
+
+# Uploads (用户上传的文件，不应该提交到 Git)
+uploads/
+*.mp3
+*.wav
+*.m4a
+*.ogg
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# IDE
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+.vscode/settings.json
+.vscode/launch.json
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
