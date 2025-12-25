@@ -7,8 +7,8 @@ WORKDIR /app
 # 复制 package 文件
 COPY package*.json ./
 
-# 安装依赖
-RUN npm ci --only=production
+# 安装所有依赖（包括 devDependencies，构建需要）
+RUN npm ci
 
 # 复制源代码
 COPY . .
@@ -16,12 +16,12 @@ COPY . .
 # 构建前端
 RUN npm run build
 
-# 安装 serve 用于服务静态文件
-RUN npm install -g serve
+# 删除 devDependencies 以减小镜像大小
+RUN npm prune --production
 
 # 暴露端口
 EXPOSE 3000
 
-# 启动命令：同时运行 API 和前端
-CMD ["sh", "-c", "serve -s dist -l 3000"]
+# 启动命令：运行 Express 服务器（同时服务前端和 API）
+CMD ["node", "server/railway-server.js"]
 
