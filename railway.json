@@ -2,7 +2,16 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile"
+    "dockerfilePath": "Dockerfile",
+    "buildArgs": {
+      "VITE_SUPABASE_URL": "$VITE_SUPABASE_URL",
+      "VITE_SUPABASE_ANON_KEY": "$VITE_SUPABASE_ANON_KEY",
+      "VITE_DINGTALK_APP_KEY": "$VITE_DINGTALK_APP_KEY",
+      "VITE_DINGTALK_APP_SECRET": "$VITE_DINGTALK_APP_SECRET",
+      "VITE_DINGTALK_AGENT_ID": "$VITE_DINGTALK_AGENT_ID",
+      "VITE_DINGTALK_CORP_ID": "$VITE_DINGTALK_CORP_ID",
+      "VITE_DINGTALK_ENCODING_AES_KEY": "$VITE_DINGTALK_ENCODING_AES_KEY"
+    }
   },
   "deploy": {
     "startCommand": "node server/railway-server.js",
