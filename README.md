@@ -15,6 +15,8 @@
 
 ## 🚀 快速开始
 
+> 💡 **新成员？** 请先查看 [快速入门指南 (QUICKSTART.md)](./QUICKSTART.md) - 5分钟快速上手！
+
 ### 1. 克隆项目（新成员）
 
 ```bash
@@ -148,8 +150,13 @@ npm run build
 
 ## 📖 文档
 
+### 🚀 新人上手
+- ⚡ [快速入门指南](./QUICKSTART.md) - **5分钟快速上手** 🆕
+- 🤝 [团队协作指南](./CONTRIBUTING.md) - **新成员必读**
+- 👋 [新成员入职指南](./新成员入职指南.md) - 完整的入职培训
+
+### 🔧 技术配置
 - 📘 [Supabase 配置指南](./SUPABASE_SETUP.md)
-- 🤝 [团队协作指南](./CONTRIBUTING.md) - **新成员必读** 🆕
 - 🤖 [钉钉机器人集成指南](./DINGTALK_INTEGRATION.md)
 - ⚡ [钉钉快速配置清单](./DINGTALK_QUICKSTART.md)
 - 📁 [数据库脚本](./database/)
