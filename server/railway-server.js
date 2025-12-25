@@ -475,7 +475,8 @@ app.get('*', (req, res) => {
 });
 
 // 启动服务器
-app.listen(PORT, () => {
+// Railway 需要监听 0.0.0.0 而不是 localhost
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 服务器启动成功！`);
   console.log(`📍 监听端口: ${PORT}`);
   console.log(`🌐 环境: ${process.env.NODE_ENV || 'production'}`);
