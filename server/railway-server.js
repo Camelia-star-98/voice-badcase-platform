@@ -21,17 +21,25 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Supabase 配置
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+
+// 延迟创建 Supabase 客户端，避免启动时因缺少环境变量而崩溃
+let supabase = null;
+if (supabaseUrl && supabaseKey) {
+  supabase = createClient(supabaseUrl, supabaseKey);
+  console.log('✅ Supabase 客户端初始化成功');
+} else {
+  console.warn('⚠️  Supabase 环境变量未配置，数据库功能将不可用');
+}
 
 // 钉钉配置
-const DINGTALK_APP_KEY = process.env.DINGTALK_APP_KEY || '';
-const DINGTALK_APP_SECRET = process.env.DINGTALK_APP_SECRET || '';
-const DINGTALK_AGENT_ID = process.env.DINGTALK_AGENT_ID || '';
-const DINGTALK_TOKEN = process.env.DINGTALK_TOKEN || '';
-const DINGTALK_AES_KEY = process.env.DINGTALK_AES_KEY || '';
-const DINGTALK_CORP_ID = process.env.DINGTALK_CORP_ID || '';
+const DINGTALK_APP_KEY = process.env.VITE_DINGTALK_APP_KEY || process.env.DINGTALK_APP_KEY || '';
+const DINGTALK_APP_SECRET = process.env.VITE_DINGTALK_APP_SECRET || process.env.DINGTALK_APP_SECRET || '';
+const DINGTALK_AGENT_ID = process.env.VITE_DINGTALK_AGENT_ID || process.env.DINGTALK_AGENT_ID || '';
+const DINGTALK_TOKEN = process.env.VITE_DINGTALK_TOKEN || process.env.DINGTALK_TOKEN || '';
+const DINGTALK_AES_KEY = process.env.VITE_DINGTALK_ENCODING_AES_KEY || process.env.DINGTALK_ENCODING_AES_KEY || '';
+const DINGTALK_CORP_ID = process.env.VITE_DINGTALK_CORP_ID || process.env.DINGTALK_CORP_ID || '';
 
 // 初始化加密工具
 let cryptoHelper = null;
@@ -388,6 +396,21 @@ app.all('/api/dingtalk-bot', async (req, res) => {
       created_at: now,
       updated_at: now,
     };
+
+    // 检查 Supabase 是否已初始化
+    if (!supabase) {
+      console.error('Supabase 未初始化');
+      
+      await sendMessageToDingTalk(
+        senderId,
+        `❌ 数据库未配置，无法保存Badcase\n\n请联系管理员配置环境变量。`
+      );
+      
+      return res.status(200).json({
+        success: false,
+        msg: `❌ 数据库未配置`
+      });
+    }
 
     const { data, error } = await supabase
       .from('badcases')
