@@ -62,7 +62,26 @@ function parseBadcaseFromMessage(text: string): any {
       data.subject = line.split(/[：:]/)[1]?.trim() || '';
     } else if (line.includes('位置：') || line.includes('位置:') || line.includes('出现位置：') || line.includes('出现位置:')) {
       const location = line.split(/[：:]/)[1]?.trim() || '';
-      data.location = location.includes('TTS') ? 'full_tts' : 'interactive';
+      // 智能识别位置
+      if (location.includes('大班衔接课互动')) {
+        data.location = 'large_class_interactive';
+      } else if (location.includes('一对一衔接课互动')) {
+        data.location = 'one_on_one_interactive';
+      } else if (location.includes('全程TTS做课') || (location.includes('全程') && location.includes('做课'))) {
+        data.location = 'full_tts_lesson';
+      } else if (location.includes('全程TTS互动') || (location.includes('全程') && location.includes('互动'))) {
+        data.location = 'full_tts_interactive';
+      } else if (location.includes('英语背单词')) {
+        data.location = 'english_word_recitation';
+      } else if (location.includes('TTS') || location.includes('做课') || location.includes('全程')) {
+        // 兼容旧格式
+        data.location = 'full_tts_lesson';
+      } else if (location.includes('互动') || location.includes('行课')) {
+        // 兼容旧格式，默认为大班衔接课互动
+        data.location = 'large_class_interactive';
+      } else {
+        data.location = location || 'large_class_interactive';
+      }
     } else if (line.includes('CMS课节ID：') || line.includes('CMS课节ID:') || line.includes('课节ID：') || line.includes('课节ID:')) {
       data.cms_section_id = line.split(/[：:]/)[1]?.trim() || null;
     } else if (line.includes('TTS课节ID：') || line.includes('TTS课节ID:')) {

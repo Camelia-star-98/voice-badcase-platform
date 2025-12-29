@@ -4,7 +4,7 @@ import { Table, Card, Space, Tag, Input, Select, Button, Modal, message, Popconf
 import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined, EyeOutlined, PlayCircleOutlined, LockOutlined, DeleteOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
-import { getSubjectList, getSubjectLabel } from '../config/subjectModelMapping';
+import { getSubjectList, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresFullTtsLessonId, requiresModelId } from '../config/subjectModelMapping';
 import { useBadcase } from '../contexts/BadcaseContext';
 import AudioPlayer from '../components/AudioPlayer';
 import dayjs from 'dayjs';
@@ -177,9 +177,7 @@ const StatusFlowPage = () => {
       key: 'location',
       width: 150,
       render: (location: string) => {
-        if (location === 'fullTTS') return '全程TTS做课部分';
-        if (location === 'interactive') return '行课互动部分';
-        return '-';
+        return location ? getLocationLabel(location) : '-';
       },
     },
     {
@@ -187,9 +185,9 @@ const StatusFlowPage = () => {
       key: 'lessonId',
       width: 150,
       render: (_, record) => {
-        if (record.location === 'fullTTS') {
+        if (requiresFullTtsLessonId(record.location || '')) {
           return record.fullTtsLessonId || '-';
-        } else if (record.location === 'interactive') {
+        } else if (requiresCmsId(record.location || '')) {
           return record.cmsId || '-';
         }
         return '-';
@@ -528,16 +526,25 @@ const StatusFlowPage = () => {
                 <div style={{ marginBottom: 8, fontWeight: 500 }}>出现位置</div>
                 <Select
                   value={editedRecord.location}
-                  onChange={(value) => handleFieldChange('location', value)}
+                  onChange={(value) => {
+                    handleFieldChange('location', value);
+                    // 清空相关ID字段
+                    handleFieldChange('fullTtsLessonId', '');
+                    handleFieldChange('cmsId', '');
+                    handleFieldChange('modelId', '');
+                  }}
                   style={{ width: '100%' }}
                 >
-                  <Option value="fullTTS">全程TTS做课部分</Option>
-                  <Option value="interactive">行课互动部分</Option>
+                  {locationOptions.map(loc => (
+                    <Option key={loc.value} value={loc.value}>
+                      {loc.label}
+                    </Option>
+                  ))}
                 </Select>
               </div>
 
               {/* CMS课节ID */}
-              {editedRecord.location === 'interactive' && (
+              {requiresCmsId(editedRecord.location || '') && (
                 <div>
                   <div style={{ marginBottom: 8, fontWeight: 500 }}>CMS课节ID</div>
                   <Input
@@ -549,7 +556,7 @@ const StatusFlowPage = () => {
               )}
 
               {/* 全程TTS课节ID */}
-              {editedRecord.location === 'fullTTS' && (
+              {requiresFullTtsLessonId(editedRecord.location || '') && (
                 <div>
                   <div style={{ marginBottom: 8, fontWeight: 500 }}>全程TTS课节ID</div>
                   <Input
@@ -571,7 +578,7 @@ const StatusFlowPage = () => {
               </div>
 
               {/* 问题模型ID */}
-              {editedRecord.location === 'interactive' && (
+              {requiresModelId(editedRecord.location || '') && (
                 <div>
                   <div style={{ marginBottom: 8, fontWeight: 500 }}>问题模型ID</div>
                   <Input
