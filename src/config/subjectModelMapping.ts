@@ -84,6 +84,8 @@ export interface LocationConfig {
 export const locationOptions: LocationConfig[] = [
   { label: '大班衔接课互动', value: 'large_class_interactive' },
   { label: '一对一衔接课互动', value: 'one_on_one_interactive' },
+  { label: '大班课做题', value: 'large_class_exercise' },
+  { label: '一对一课做题', value: 'one_on_one_exercise' },
   { label: '全程TTS做课', value: 'full_tts_lesson' },
   { label: '全程TTS互动', value: 'full_tts_interactive' },
   { label: '英语背单词', value: 'english_word_recitation' },
@@ -95,19 +97,27 @@ export const getLocationLabel = (locationValue: string): string => {
   return location ? location.label : locationValue;
 };
 
-// 判断是否需要CMS课节ID（互动类需要）
+// 判断是否需要CMS课节ID（互动类和做题类需要）
 export const requiresCmsId = (location: string): boolean => {
-  return location === 'large_class_interactive' || location === 'one_on_one_interactive' || location === 'full_tts_interactive';
+  return location === 'large_class_interactive' 
+    || location === 'one_on_one_interactive' 
+    || location === 'full_tts_interactive'
+    || location === 'large_class_exercise'
+    || location === 'one_on_one_exercise';
 };
 
-// 判断是否需要全程TTS课节ID
+// 判断是否需要全程TTS课节ID（所有全程TTS相关都需要）
 export const requiresFullTtsLessonId = (location: string): boolean => {
-  return location === 'full_tts_lesson';
+  return location === 'full_tts_lesson' || location === 'full_tts_interactive';
 };
 
-// 判断是否需要问题模型ID（互动类需要）
+// 判断是否需要问题模型ID（互动类和做题类需要）
 export const requiresModelId = (location: string): boolean => {
-  return location === 'large_class_interactive' || location === 'one_on_one_interactive' || location === 'full_tts_interactive';
+  return location === 'large_class_interactive' 
+    || location === 'one_on_one_interactive' 
+    || location === 'full_tts_interactive'
+    || location === 'large_class_exercise'
+    || location === 'one_on_one_exercise';
 };
 
 // 全程TTS互动的音色ID映射（cosy voice造数TTS）
@@ -169,6 +179,18 @@ export const getModelsBySubjectAndLocation = (subject: string, location?: string
   
   // 如果是大班衔接课互动场景，返回专用的音色ID
   if (location === 'large_class_interactive') {
+    const voiceId = largeClassInteractiveVoiceMapping[subject];
+    return voiceId ? [voiceId] : [];
+  }
+  
+  // 如果是一对一课做题场景，使用一对一风格
+  if (location === 'one_on_one_exercise') {
+    const voiceId = oneOnOneInteractiveVoiceMapping[subject];
+    return voiceId ? [voiceId] : [];
+  }
+  
+  // 如果是大班课做题场景，使用大班课风格
+  if (location === 'large_class_exercise') {
     const voiceId = largeClassInteractiveVoiceMapping[subject];
     return voiceId ? [voiceId] : [];
   }

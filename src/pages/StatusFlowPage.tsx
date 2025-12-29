@@ -6,6 +6,7 @@ import { SearchOutlined, EyeOutlined, PlayCircleOutlined, LockOutlined, DeleteOu
 import { BadcaseData } from '../types';
 import { getSubjectList, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresFullTtsLessonId, requiresModelId } from '../config/subjectModelMapping';
 import { useBadcase } from '../contexts/BadcaseContext';
+import { CATEGORY_OPTIONS } from '../constants/categories';
 import AudioPlayer from '../components/AudioPlayer';
 import dayjs from 'dayjs';
 import './BadcaseListPage.css';
@@ -597,13 +598,11 @@ const StatusFlowPage = () => {
                   onChange={(value) => handleFieldChange('category', value)}
                   style={{ width: '100%' }}
                 >
-                  <Option value="读音错误">读音错误</Option>
-                  <Option value="停顿不当">停顿不当</Option>
-                  <Option value="重读不对">重读不对</Option>
-                  <Option value="语速突变">语速突变</Option>
-                  <Option value="音量突变">音量突变</Option>
-                  <Option value="音质问题">音质问题</Option>
-                  <Option value="其他">其他</Option>
+                  {CATEGORY_OPTIONS.map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
                 </Select>
               </div>
 
