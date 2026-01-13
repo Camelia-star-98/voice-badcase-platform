@@ -264,7 +264,7 @@ const DataDashboardPage = () => {
     <div className="data-dashboard-page">
       {/* 标题区域 */}
       <div className="dashboard-header">
-        <h1 className="dashboard-title">AI英语TTS Badcase跟进</h1>
+        <h1 className="dashboard-title">TTS Badcase跟进</h1>
         <p className="dashboard-subtitle">
           每天自动化展示「反馈量、问题占比及解决进度」等数据摘要信息
         </p>
