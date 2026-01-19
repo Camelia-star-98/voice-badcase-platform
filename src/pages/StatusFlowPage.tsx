@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Card, Space, Tag, Input, Select, Button, Modal, message, Popconfirm, DatePicker } from 'antd';
+import { Table, Card, Space, Tag, Input, Select, Button, Modal, message, Popconfirm, DatePicker, Upload } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { SearchOutlined, EyeOutlined, PlayCircleOutlined, LockOutlined, DeleteOutlined } from '@ant-design/icons';
+import type { UploadFile } from 'antd/es/upload/interface';
+import { SearchOutlined, EyeOutlined, PlayCircleOutlined, LockOutlined, DeleteOutlined, UploadOutlined, AudioOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
 import { getSubjectList, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresFullTtsLessonId, requiresModelId } from '../config/subjectModelMapping';
 import { useBadcase } from '../contexts/BadcaseContext';
@@ -33,6 +34,7 @@ const StatusFlowPage = () => {
   // 编辑模式状态
   const [editedRecord, setEditedRecord] = useState<BadcaseData | null>(null);
   const [saving, setSaving] = useState(false);
+  const [audioFileList, setAudioFileList] = useState<UploadFile[]>([]);
   
   // 密码验证相关状态
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -260,14 +262,27 @@ const StatusFlowPage = () => {
 
   const handleViewDetail = (record: BadcaseData) => {
     setEditedRecord(record); // 初始化编辑数据
+    // 如果有现有音频文件，初始化文件列表（但不添加到上传列表，只用于显示）
+    if (record.audioUrl) {
+      // 不添加到 audioFileList，因为那是用于新上传的文件
+      // 现有音频文件通过 editedRecord.audioUrl 访问
+      setAudioFileList([]);
+    } else {
+      setAudioFileList([]);
+    }
     setDetailModalVisible(true);
   };
 
   const handlePlayAudio = (record: BadcaseData) => {
     if (record.audioUrl) {
-      setCurrentAudioUrl(record.audioUrl);
-      setCurrentRecordId(record.id);
-      setAudioPlayerVisible(true);
+      // 检查音频URL是否有效
+      if (record.audioUrl.startsWith('data:') || record.audioUrl.startsWith('http') || record.audioUrl.startsWith('blob:')) {
+        setCurrentAudioUrl(record.audioUrl);
+        setCurrentRecordId(record.id);
+        setAudioPlayerVisible(true);
+      } else {
+        message.error('音频文件格式不正确');
+      }
     } else {
       message.warning('该记录没有上传音频文件');
     }
@@ -279,11 +294,41 @@ const StatusFlowPage = () => {
     
     setSaving(true);
     try {
-      // 更新数据
-      await updateBadcase(editedRecord.id, editedRecord);
+      // 处理音频文件上传
+      let audioUrl = editedRecord.audioUrl; // 保留原有音频URL
+      
+      // 如果有新上传的音频文件，转换为Base64
+      if (audioFileList.length > 0 && audioFileList[0].originFileObj) {
+        try {
+          const file = audioFileList[0].originFileObj as File;
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          audioUrl = base64;
+          console.log('✅ 音频文件已成功处理');
+        } catch (error) {
+          console.error('❌ 音频文件转换失败:', error);
+          message.warning('音频文件处理失败，将使用原有音频文件');
+        }
+      } else if (audioFileList.length === 0) {
+        // 如果文件列表为空，清空音频URL（用户删除了音频文件）
+        audioUrl = undefined;
+      }
+      
+      // 更新数据，包含音频URL
+      const updatedRecord = {
+        ...editedRecord,
+        audioUrl: audioUrl,
+      };
+      
+      await updateBadcase(editedRecord.id, updatedRecord);
       message.success('保存成功');
       setDetailModalVisible(false);
       setEditedRecord(null);
+      setAudioFileList([]);
     } catch (error) {
       console.error('保存失败:', error);
       message.error('保存失败，请重试');
@@ -472,11 +517,13 @@ const StatusFlowPage = () => {
         onCancel={() => {
           setDetailModalVisible(false);
           setEditedRecord(null);
+          setAudioFileList([]);
         }}
         footer={[
           <Button key="cancel" onClick={() => {
             setDetailModalVisible(false);
             setEditedRecord(null);
+            setAudioFileList([]);
           }}>
             取消
           </Button>,
@@ -663,18 +710,60 @@ const StatusFlowPage = () => {
               </div>
 
               {/* 音频文件 */}
-              {editedRecord.audioUrl && (
-                <div>
-                  <div style={{ marginBottom: 8, fontWeight: 500 }}>音频文件</div>
-                  <Button
-                    type="link"
-                    icon={<PlayCircleOutlined />}
-                    onClick={() => handlePlayAudio(editedRecord)}
-                  >
-                    播放音频
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>音频文件</div>
+                
+                {/* 显示现有音频文件 */}
+                {editedRecord.audioUrl && (
+                  <div style={{ marginBottom: 12 }}>
+                    <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                      <Space>
+                        <AudioOutlined style={{ color: '#1890ff' }} />
+                        <span style={{ color: '#666' }}>
+                          {audioFileList.length > 0 && audioFileList[0].originFileObj 
+                            ? '当前音频文件（保存后将替换）' 
+                            : '当前音频文件'}
+                        </span>
+                      </Space>
+                      <Button
+                        type="link"
+                        icon={<PlayCircleOutlined />}
+                        onClick={() => handlePlayAudio(editedRecord)}
+                      >
+                        播放
+                      </Button>
+                    </Space>
+                  </div>
+                )}
+                
+                {/* 上传组件 */}
+                <Upload
+                  fileList={audioFileList}
+                  beforeUpload={() => false} // 阻止自动上传
+                  onChange={(info) => {
+                    // 只保留最新上传的文件
+                    const fileList = info.fileList.slice(-1);
+                    setAudioFileList(fileList);
+                  }}
+                  onRemove={() => {
+                    setAudioFileList([]);
+                    // 如果删除了新上传的文件，保留原有音频
+                  }}
+                  accept="audio/*"
+                  maxCount={1}
+                >
+                  <Button icon={<UploadOutlined />} style={{ width: '100%' }}>
+                    {editedRecord.audioUrl ? '替换音频文件' : '上传音频文件'}
                   </Button>
-                </div>
-              )}
+                </Upload>
+                
+                {/* 新文件提示 */}
+                {audioFileList.length > 0 && audioFileList[0].originFileObj && (
+                  <div style={{ marginTop: 8, color: '#52c41a', fontSize: '12px' }}>
+                    <CheckCircleOutlined /> 已选择新文件，保存后将替换原有音频
+                  </div>
+                )}
+              </div>
             </Space>
           </div>
         )}
