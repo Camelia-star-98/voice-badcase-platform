@@ -16,7 +16,7 @@ function mapDbToBadcaseData(dbData: any): BadcaseData {
     category: dbData.category,
     expectedFixDate: dbData.expected_fix_date,
     status: dbData.status,
-    priority: dbData.priority || 'medium', // 默认值为 medium
+    priority: dbData.priority || 'P1', // 默认值为 P1
     description: dbData.description,
     audioUrl: dbData.audio_url,
     modelId: dbData.model_id,

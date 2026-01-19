@@ -8,12 +8,12 @@
 -- ================================================
 
 -- 添加 priority 字段（修复优先级）
--- 可选值：high（高）、medium（中）、low（低）
+-- 可选值：P00（立刻修复）、P0（多天内修复）、P1（多周内修复）、P2（可先不修）
 ALTER TABLE public.badcases 
-ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'medium';
+ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'P1';
 
 -- 添加注释说明
-COMMENT ON COLUMN public.badcases.priority IS '修复优先级：high（高）、medium（中）、low（低）';
+COMMENT ON COLUMN public.badcases.priority IS '修复优先级：P00（立刻修复）、P0（多天内修复）、P1（多周内修复）、P2（可先不修）';
 
 -- 创建索引以提升查询性能
 CREATE INDEX IF NOT EXISTS idx_badcases_priority ON public.badcases(priority);
@@ -25,8 +25,8 @@ BEGIN
   RAISE NOTICE '';
   RAISE NOTICE '📋 字段信息：';
   RAISE NOTICE '  - priority (修复优先级)';
-  RAISE NOTICE '  - 默认值: medium（中）';
-  RAISE NOTICE '  - 可选值: high（高）、medium（中）、low（低）';
+  RAISE NOTICE '  - 默认值: P1（多周内修复）';
+  RAISE NOTICE '  - 可选值: P00（立刻修复）、P0（多天内修复）、P1（多周内修复）、P2（可先不修）';
   RAISE NOTICE '';
   RAISE NOTICE '✅ 已创建索引以提升查询性能';
 END $$;
