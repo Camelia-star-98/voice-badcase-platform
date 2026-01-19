@@ -158,10 +158,23 @@ function parseBadcaseFromMessage(text) {
     } else if (line.includes('出现位置：') || line.includes('出现位置:') || 
                line.includes('位置：') || line.includes('位置:')) {
       const location = line.split(/[：:]/)[1]?.trim().replace(/【.*?】/g, '') || '';
-      if (location.includes('TTS') || location.includes('做课') || location.includes('全程')) {
-        data.location = 'full_tts';
+      // 智能识别位置
+      if (location.includes('大班衔接课互动')) {
+        data.location = 'large_class_interactive';
+      } else if (location.includes('一对一衔接课互动')) {
+        data.location = 'one_on_one_interactive';
+      } else if (location.includes('全程TTS做课') || (location.includes('全程') && location.includes('做课'))) {
+        data.location = 'full_tts_lesson';
+      } else if (location.includes('全程TTS互动') || (location.includes('全程') && location.includes('互动'))) {
+        data.location = 'full_tts_interactive';
+      } else if (location.includes('英语背单词')) {
+        data.location = 'english_word_recitation';
+      } else if (location.includes('TTS') || location.includes('做课') || location.includes('全程')) {
+        // 兼容旧格式
+        data.location = 'full_tts_lesson';
       } else if (location.includes('互动') || location.includes('行课')) {
-        data.location = 'interactive';
+        // 兼容旧格式，默认为大班衔接课互动
+        data.location = 'large_class_interactive';
       } else if (location) {
         data.location = location;
       }
@@ -475,8 +488,17 @@ app.all('/api/dingtalk-bot', async (req, res) => {
     }
 
     const priorityEmoji = data.priority === 'P0' ? '🔴' : data.priority === 'P1' ? '🟡' : '🟢';
-    const locationText = data.location === 'full_tts' ? '全程TTS做课部分' : 
-                        data.location === 'interactive' ? '行课互动部分' : data.location;
+    const locationTextMap = {
+      'large_class_interactive': '大班衔接课互动',
+      'one_on_one_interactive': '一对一衔接课互动',
+      'full_tts_lesson': '全程TTS做课',
+      'full_tts_interactive': '全程TTS互动',
+      'english_word_recitation': '英语背单词',
+      // 兼容旧格式
+      'full_tts': '全程TTS做课',
+      'interactive': '行课互动部分',
+    };
+    const locationText = locationTextMap[data.location] || data.location || '';
     
     const successMessage = `✅ Badcase提报成功！
 

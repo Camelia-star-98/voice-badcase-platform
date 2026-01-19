@@ -101,9 +101,28 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
 
           switch (payload.eventType) {
             case 'INSERT':
-              // 新增数据
-              const newRecord = payload.new as BadcaseData;
-              console.log('➕ 新增 Badcase:', newRecord.id);
+              // 新增数据 - 需要进行字段映射
+              const newRecordRaw = payload.new as any;
+              const newRecord: BadcaseData = {
+                id: newRecordRaw.id,
+                date: newRecordRaw.date,
+                subject: newRecordRaw.subject,
+                location: newRecordRaw.location,
+                fullTtsLessonId: newRecordRaw.full_tts_lesson_id,
+                cmsId: newRecordRaw.cms_id,
+                reporter: newRecordRaw.reporter,
+                category: newRecordRaw.category,
+                expectedFixDate: newRecordRaw.expected_fix_date,
+                status: newRecordRaw.status,
+                description: newRecordRaw.description,
+                audioUrl: newRecordRaw.audio_url,
+                videoUrl: newRecordRaw.video_url,
+                modelId: newRecordRaw.model_id,
+                remark: newRecordRaw.remark,
+                createdAt: newRecordRaw.created_at ? new Date(newRecordRaw.created_at).toLocaleString('zh-CN') : '',
+                updatedAt: newRecordRaw.updated_at ? new Date(newRecordRaw.updated_at).toLocaleString('zh-CN') : '',
+              };
+              console.log('➕ 新增 Badcase:', newRecord.id, newRecord);
               setBadcaseList((prev) => {
                 // 检查是否已存在（避免重复）
                 if (prev.some((item) => item.id === newRecord.id)) {
@@ -115,9 +134,28 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
               break;
 
             case 'UPDATE':
-              // 更新数据
-              const updatedRecord = payload.new as BadcaseData;
-              console.log('✏️ 更新 Badcase:', updatedRecord.id);
+              // 更新数据 - 需要进行字段映射
+              const updatedRecordRaw = payload.new as any;
+              const updatedRecord: BadcaseData = {
+                id: updatedRecordRaw.id,
+                date: updatedRecordRaw.date,
+                subject: updatedRecordRaw.subject,
+                location: updatedRecordRaw.location,
+                fullTtsLessonId: updatedRecordRaw.full_tts_lesson_id,
+                cmsId: updatedRecordRaw.cms_id,
+                reporter: updatedRecordRaw.reporter,
+                category: updatedRecordRaw.category,
+                expectedFixDate: updatedRecordRaw.expected_fix_date,
+                status: updatedRecordRaw.status,
+                description: updatedRecordRaw.description,
+                audioUrl: updatedRecordRaw.audio_url,
+                videoUrl: updatedRecordRaw.video_url,
+                modelId: updatedRecordRaw.model_id,
+                remark: updatedRecordRaw.remark,
+                createdAt: updatedRecordRaw.created_at ? new Date(updatedRecordRaw.created_at).toLocaleString('zh-CN') : '',
+                updatedAt: updatedRecordRaw.updated_at ? new Date(updatedRecordRaw.updated_at).toLocaleString('zh-CN') : '',
+              };
+              console.log('✏️ 更新 Badcase:', updatedRecord.id, updatedRecord);
               setBadcaseList((prev) =>
                 prev.map((item) =>
                   item.id === updatedRecord.id ? updatedRecord : item

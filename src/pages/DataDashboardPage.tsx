@@ -110,7 +110,7 @@ const DataDashboardPage = () => {
   // 柱状图配置 - 每周反馈Badcase数量（按优先级）
   const barChartOption = {
     title: {
-      text: 'AI英语_每周_反馈Badcase_修复优先级',
+      text: '每周_反馈Badcase_修复优先级',
       left: 'center',
       textStyle: {
         fontSize: 16,
@@ -174,7 +174,7 @@ const DataDashboardPage = () => {
   // 堆叠面积图配置 - 修复进度
   const areaChartOption = {
     title: {
-      text: 'AI英语_每周_反馈Badcase_解决进度',
+      text: '每周_反馈Badcase_解决进度',
       left: 'center',
       textStyle: {
         fontSize: 16,
@@ -264,7 +264,7 @@ const DataDashboardPage = () => {
     <div className="data-dashboard-page">
       {/* 标题区域 */}
       <div className="dashboard-header">
-        <h1 className="dashboard-title">AI英语TTS Badcase跟进</h1>
+        <h1 className="dashboard-title">TTS Badcase跟进</h1>
         <p className="dashboard-subtitle">
           每天自动化展示「反馈量、问题占比及解决进度」等数据摘要信息
         </p>
@@ -368,7 +368,7 @@ const DataDashboardPage = () => {
       {stats.categoryDistribution.length > 0 && (
         <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
           <Col xs={24}>
-            <Card title="AI英语_每周_反馈Badcase_体感分类" className="chart-card">
+            <Card title="每周_反馈Badcase_体感分类" className="chart-card">
               <Row gutter={[16, 16]}>
                 {stats.categoryDistribution.map(category => (
                   <Col key={category.name} xs={12} sm={8} md={6} lg={4}>

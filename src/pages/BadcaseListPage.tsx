@@ -4,8 +4,9 @@ import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { SearchOutlined, EyeOutlined, PlayCircleOutlined, UploadOutlined, CloudUploadOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
-import { getSubjectList, getModelsBySubject, getSubjectLabel } from '../config/subjectModelMapping';
+import { getSubjectList, getModelsBySubject, getModelsBySubjectAndLocation, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresFullTtsLessonId, requiresModelId } from '../config/subjectModelMapping';
 import { useBadcase } from '../contexts/BadcaseContext';
+import { CATEGORY_OPTIONS } from '../constants/categories';
 import dayjs from 'dayjs';
 import AudioPlayer from '../components/AudioPlayer';
 import './BadcaseListPage.css';
@@ -187,14 +188,9 @@ const BadcaseListPage = () => {
       key: 'location',
       width: 150,
       render: (location: string) => {
-        if (location === 'fullTTS') return '全程TTS做课部分';
-        if (location === 'interactive') return '行课互动部分';
-        return '-';
+        return location ? getLocationLabel(location) : '-';
       },
-      filters: [
-        { text: '全程TTS做课部分', value: 'fullTTS' },
-        { text: '行课互动部分', value: 'interactive' },
-      ],
+      filters: locationOptions.map(loc => ({ text: loc.label, value: loc.value })),
       onFilter: (value, record) => record.location === value,
     },
     {
@@ -202,9 +198,9 @@ const BadcaseListPage = () => {
       key: 'lessonId',
       width: 150,
       render: (_, record) => {
-        if (record.location === 'fullTTS') {
+        if (requiresFullTtsLessonId(record.location || '')) {
           return record.fullTtsLessonId || '-';
-        } else if (record.location === 'interactive') {
+        } else if (requiresCmsId(record.location || '')) {
           return record.cmsId || '-';
         }
         return '-';
@@ -380,10 +376,28 @@ const BadcaseListPage = () => {
   // 处理学科选择变化
   const handleSubjectChange = (subject: string) => {
     setSelectedSubject(subject);
-    const models = getModelsBySubject(subject);
+    // 根据学科和当前选择的出现位置获取模型ID列表
+    const models = getModelsBySubjectAndLocation(subject, selectedLocation);
     setAvailableModels(models);
     // 清空已选择的模型ID
     uploadForm.setFieldsValue({ modelId: undefined });
+  };
+
+  // 处理出现位置选择变化
+  const handleLocationChange = (location: string) => {
+    setSelectedLocation(location);
+    // 如果已经选择了学科，需要根据新的出现位置更新模型ID列表
+    if (selectedSubject) {
+      const models = getModelsBySubjectAndLocation(selectedSubject, location);
+      setAvailableModels(models);
+      // 清空已选择的模型ID
+      uploadForm.setFieldsValue({ modelId: undefined });
+    }
+    // 清空相关ID字段
+    uploadForm.setFieldsValue({ 
+      fullTtsLessonId: undefined,
+      cmsId: undefined,
+    });
   };
 
   const handleUploadSubmit = async () => {
@@ -454,8 +468,8 @@ const BadcaseListPage = () => {
         date: currentDate, // 使用当前日期作为提交日期
         subject: values.subject, // 保存学科
         location: values.location, // 保存出现位置
-        fullTtsLessonId: values.location === 'fullTTS' ? values.fullTtsLessonId : undefined, // 全程TTS课节ID
-        cmsId: values.location === 'interactive' ? values.cmsId : undefined, // CMS课节ID
+        fullTtsLessonId: requiresFullTtsLessonId(values.location) ? values.fullTtsLessonId : undefined, // 全程TTS课节ID
+        cmsId: requiresCmsId(values.location) ? values.cmsId : undefined, // CMS课节ID
         reporter: values.reporter, // 保存问题提报人
         category: finalCategory,
         expectedFixDate: values.expectedFixDate.format('YYYY-MM-DD'),
@@ -464,7 +478,7 @@ const BadcaseListPage = () => {
         description: values.description,
         audioUrl: audioUrl,
         videoUrl: videoUrl,
-        modelId: values.location === 'interactive' ? values.modelId : undefined, // 只在行课互动时保存问题模型ID
+        modelId: requiresModelId(values.location) ? values.modelId : undefined, // 只在需要时保存问题模型ID
         createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
         updatedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
       };
@@ -653,18 +667,14 @@ const BadcaseListPage = () => {
               {selectedRecord.subject ? getSubjectLabel(selectedRecord.subject) : '未分类'}
             </Descriptions.Item>
             <Descriptions.Item label="出现位置" span={2}>
-              {selectedRecord.location === 'fullTTS' 
-                ? '全程TTS做课部分' 
-                : selectedRecord.location === 'interactive' 
-                ? '行课互动部分' 
-                : '未填写'}
+              {selectedRecord.location ? getLocationLabel(selectedRecord.location) : '未填写'}
             </Descriptions.Item>
-            {selectedRecord.location === 'fullTTS' && selectedRecord.fullTtsLessonId && (
+            {requiresFullTtsLessonId(selectedRecord.location || '') && selectedRecord.fullTtsLessonId && (
               <Descriptions.Item label="全程TTS课节ID" span={2}>
                 {selectedRecord.fullTtsLessonId}
               </Descriptions.Item>
             )}
-            {selectedRecord.location === 'interactive' && selectedRecord.cmsId && (
+            {requiresCmsId(selectedRecord.location || '') && selectedRecord.cmsId && (
               <Descriptions.Item label="CMS课节ID" span={2}>
                 {selectedRecord.cmsId}
               </Descriptions.Item>
@@ -672,7 +682,7 @@ const BadcaseListPage = () => {
             <Descriptions.Item label="问题提报人" span={2}>
               {selectedRecord.reporter || '未填写'}
             </Descriptions.Item>
-            {selectedRecord.location === 'interactive' && (
+            {requiresModelId(selectedRecord.location || '') && (
               <Descriptions.Item label="问题模型ID" span={2}>
                 {selectedRecord.modelId || '未填写'}
               </Descriptions.Item>
@@ -781,23 +791,18 @@ const BadcaseListPage = () => {
           >
             <Select 
               placeholder="请选择出现位置"
-              onChange={(value) => {
-                setSelectedLocation(value);
-                // 清空相关ID字段
-                uploadForm.setFieldsValue({ 
-                  fullTtsLessonId: undefined,
-                  cmsId: undefined,
-                  modelId: undefined // 清空问题模型ID
-                });
-              }}
+              onChange={handleLocationChange}
             >
-              <Option value="fullTTS">全程TTS做课部分</Option>
-              <Option value="interactive">行课互动部分</Option>
+              {locationOptions.map(loc => (
+                <Option key={loc.value} value={loc.value}>
+                  {loc.label}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 
           {/* 根据出现位置显示不同的ID输入框 */}
-          {selectedLocation === 'fullTTS' && (
+          {requiresFullTtsLessonId(selectedLocation) && (
             <Form.Item
               name="fullTtsLessonId"
               label="全程TTS课节ID"
@@ -807,7 +812,7 @@ const BadcaseListPage = () => {
             </Form.Item>
           )}
 
-          {selectedLocation === 'interactive' && (
+          {requiresCmsId(selectedLocation) && (
             <Form.Item
               name="cmsId"
               label="CMS课节ID"
@@ -825,8 +830,8 @@ const BadcaseListPage = () => {
             <Input placeholder="请输入提报人姓名" />
           </Form.Item>
 
-          {/* 只在选择"行课互动部分"时显示问题模型ID */}
-          {selectedLocation === 'interactive' && (
+          {/* 只在需要问题模型ID的位置显示 */}
+          {requiresModelId(selectedLocation) && (
             <Form.Item
               name="modelId"
               label="问题模型ID"
@@ -854,13 +859,11 @@ const BadcaseListPage = () => {
               placeholder="请选择问题分类"
               onChange={(value) => setSelectedCategory(value)}
             >
-              <Option value="读音错误">读音错误</Option>
-              <Option value="停顿不当">停顿不当</Option>
-              <Option value="重读不对">重读不对</Option>
-              <Option value="语速突变">语速突变</Option>
-              <Option value="音量突变">音量突变</Option>
-              <Option value="音质问题">音质问题</Option>
-              <Option value="其他">其他</Option>
+              {CATEGORY_OPTIONS.map(option => (
+                <Option key={option.value} value={option.value}>
+                  {option.label}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 
