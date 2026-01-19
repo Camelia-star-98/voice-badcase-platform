@@ -10,7 +10,7 @@ export interface BadcaseData {
   category: string;
   expectedFixDate: string; // 期望修复时间
   status: 'pending' | 'algorithm_processing' | 'engineering_processing' | 'resolved' | 'processing';
-  priority?: 'high' | 'medium' | 'low'; // 修复优先级：高、中、低
+  priority?: 'P00' | 'P0' | 'P1' | 'P2'; // 修复优先级：P00-立刻修复, P0-多天内修复, P1-多周内修复, P2-可先不修
   description: string;
   audioUrl?: string;
   videoUrl?: string; // 视频文件URL
