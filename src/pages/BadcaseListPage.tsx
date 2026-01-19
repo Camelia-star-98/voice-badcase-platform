@@ -4,7 +4,7 @@ import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { SearchOutlined, EyeOutlined, PlayCircleOutlined, UploadOutlined, CloudUploadOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
-import { getSubjectList, getModelsBySubject, getModelsBySubjectAndLocation, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresFullTtsLessonId, requiresModelId } from '../config/subjectModelMapping';
+import { getSubjectList, getModelsBySubjectAndLocation, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresFullTtsLessonId, requiresModelId } from '../config/subjectModelMapping';
 import { useBadcase } from '../contexts/BadcaseContext';
 import { CATEGORY_OPTIONS } from '../constants/categories';
 import dayjs from 'dayjs';

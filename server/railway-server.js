@@ -8,7 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
-import { DingTalkCrypto } from '../api/dingtalk-crypto.js';
+import { DingTalkCrypto } from '../api/dingtalk-crypto.ts';
 import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
