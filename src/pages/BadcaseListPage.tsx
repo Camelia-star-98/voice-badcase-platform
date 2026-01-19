@@ -30,6 +30,7 @@ const BadcaseListPage = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [audioPlayerVisible, setAudioPlayerVisible] = useState(false);
   const [currentAudioUrl, setCurrentAudioUrl] = useState('');
@@ -68,6 +69,26 @@ const BadcaseListPage = () => {
       pending: '待处理',
     };
     return texts[status as keyof typeof texts] || status;
+  };
+
+  const getPriorityColor = (priority?: string) => {
+    const colors = {
+      P00: 'red',      // 立刻修复 - 红色
+      P0: 'orange',    // 多天内修复 - 橙色
+      P1: 'blue',      // 多周内修复 - 蓝色
+      P2: 'default',   // 可先不修 - 灰色
+    };
+    return colors[priority as keyof typeof colors] || 'default';
+  };
+
+  const getPriorityText = (priority?: string) => {
+    const texts = {
+      P00: 'P00：立刻修复',
+      P0: 'P0：多天内修复',
+      P1: 'P1：多周内修复',
+      P2: 'P2：可先不修',
+    };
+    return texts[priority as keyof typeof texts] || 'P1：多周内修复';
   };
 
   const columns: ColumnsType<BadcaseData> = [
@@ -110,6 +131,39 @@ const BadcaseListPage = () => {
         { text: '处理中', value: 'processing' },
       ],
       onFilter: (value, record) => record.status === value,
+    },
+    {
+      title: '优先级',
+      dataIndex: 'priority',
+      key: 'priority',
+      width: 180,
+      render: (priority?: string) => (
+        <Tag 
+          color={getPriorityColor(priority)}
+          style={{ 
+            margin: 0,
+            padding: '4px 12px',
+            fontSize: '13px',
+            lineHeight: '1.5',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {getPriorityText(priority)}
+        </Tag>
+      ),
+      filters: [
+        { text: 'P00：立刻修复', value: 'P00' },
+        { text: 'P0：多天内修复', value: 'P0' },
+        { text: 'P1：多周内修复', value: 'P1' },
+        { text: 'P2：可先不修', value: 'P2' },
+      ],
+      onFilter: (value, record) => (record.priority || 'P1') === value,
+      sorter: (a, b) => {
+        const priorityOrder = { P00: 4, P0: 3, P1: 2, P2: 1 };
+        const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 2;
+        const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 2;
+        return bPriority - aPriority; // P00优先级最高，在前
+      },
     },
     {
       title: '提交日期',
@@ -282,6 +336,10 @@ const BadcaseListPage = () => {
         filtered = filtered.filter((item) => item.subject === subjectFilter);
       }
 
+      if (priorityFilter !== 'all') {
+        filtered = filtered.filter((item) => (item.priority || 'P1') === priorityFilter);
+      }
+
       // 按ID降序排列（新到旧）
       filtered.sort((a, b) => {
         const numA = parseInt(a.id.replace(/\D/g, ''), 10);
@@ -299,6 +357,7 @@ const BadcaseListPage = () => {
     setCategoryFilter('all');
     setStatusFilter('all');
     setSubjectFilter('all');
+    setPriorityFilter('all');
     // 按ID降序排列（新到旧）
     const sortedList = [...badcaseList].sort((a, b) => {
       const numA = parseInt(a.id.replace(/\D/g, ''), 10);
@@ -401,6 +460,7 @@ const BadcaseListPage = () => {
         category: finalCategory,
         expectedFixDate: values.expectedFixDate.format('YYYY-MM-DD'),
         status: 'pending',
+        priority: values.priority || 'P1',
         description: values.description,
         audioUrl: audioUrl,
         videoUrl: videoUrl,
@@ -421,6 +481,7 @@ const BadcaseListPage = () => {
       setSelectedSubject('');
       setAvailableModels([]);
       setSelectedLocation('');
+      uploadForm.setFieldsValue({ priority: 'P1' }); // 重置优先级为默认值
     } catch (error) {
       console.error('表单验证失败:', error);
     }
@@ -520,6 +581,17 @@ const BadcaseListPage = () => {
               <Option value="resolved">已解决</Option>
               <Option value="processing">处理中</Option>
             </Select>
+            <Select
+              value={priorityFilter}
+              onChange={setPriorityFilter}
+              style={{ width: 180 }}
+            >
+              <Option value="all">全部优先级</Option>
+              <Option value="P00">P00：立刻修复</Option>
+              <Option value="P0">P0：多天内修复</Option>
+              <Option value="P1">P1：多周内修复</Option>
+              <Option value="P2">P2：可先不修</Option>
+            </Select>
             <Button type="primary" onClick={handleSearch}>
               搜索
             </Button>
@@ -611,9 +683,14 @@ const BadcaseListPage = () => {
             <Descriptions.Item label="期望修复时间">
               {selectedRecord.expectedFixDate}
             </Descriptions.Item>
-            <Descriptions.Item label="状态" span={2}>
+            <Descriptions.Item label="状态">
               <Tag color={getStatusColor(selectedRecord.status)}>
                 {getStatusText(selectedRecord.status)}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="优先级">
+              <Tag color={getPriorityColor(selectedRecord.priority)}>
+                {getPriorityText(selectedRecord.priority)}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="描述" span={2}>
@@ -816,6 +893,20 @@ const BadcaseListPage = () => {
               style={{ width: '100%' }}
               format="YYYY-MM-DD"
             />
+          </Form.Item>
+
+          <Form.Item
+            name="priority"
+            label="修复优先级"
+            initialValue="P1"
+            rules={[{ required: true, message: '请选择修复优先级' }]}
+          >
+            <Select placeholder="请选择修复优先级">
+              <Option value="P00">P00：立刻修复</Option>
+              <Option value="P0">P0：多天内修复</Option>
+              <Option value="P1">P1：多周内修复</Option>
+              <Option value="P2">P2：可先不修</Option>
+            </Select>
           </Form.Item>
 
           <Form.Item

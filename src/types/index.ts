@@ -10,6 +10,7 @@ export interface BadcaseData {
   category: string;
   expectedFixDate: string; // 期望修复时间
   status: 'pending' | 'algorithm_processing' | 'engineering_processing' | 'resolved' | 'processing';
+  priority?: 'high' | 'medium' | 'low'; // 修复优先级：高、中、低
   description: string;
   audioUrl?: string;
   videoUrl?: string; // 视频文件URL
@@ -46,5 +47,6 @@ export interface FilterOptions {
   category?: string;
   expectedFixDateRange?: [string, string];
   status?: string;
+  priority?: string; // 优先级筛选
 }
 

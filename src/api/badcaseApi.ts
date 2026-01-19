@@ -16,6 +16,7 @@ function mapDbToBadcaseData(dbData: any): BadcaseData {
     category: dbData.category,
     expectedFixDate: dbData.expected_fix_date,
     status: dbData.status,
+    priority: dbData.priority || 'medium', // 默认值为 medium
     description: dbData.description,
     audioUrl: dbData.audio_url,
     modelId: dbData.model_id,
@@ -40,6 +41,7 @@ function mapBadcaseDataToDb(data: Partial<BadcaseData>): any {
   if (data.category !== undefined) dbData.category = data.category;
   if (data.expectedFixDate !== undefined) dbData.expected_fix_date = data.expectedFixDate;
   if (data.status !== undefined) dbData.status = data.status;
+  if (data.priority !== undefined) dbData.priority = data.priority;
   if (data.description !== undefined) dbData.description = data.description;
   if (data.audioUrl !== undefined) dbData.audio_url = data.audioUrl;
   if (data.modelId !== undefined) dbData.model_id = data.modelId;
