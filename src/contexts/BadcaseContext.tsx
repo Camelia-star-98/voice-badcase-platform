@@ -3,6 +3,7 @@ import { BadcaseData } from '../types';
 import { mockBadcaseList } from '../api/mockData';
 import * as badcaseApi from '../api/badcaseApi';
 import { supabase } from '../api/supabase';
+import { message } from 'antd';
 
 interface BadcaseContextType {
   badcaseList: BadcaseData[];
@@ -199,9 +200,26 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
   // 当不使用 Supabase 时，保存到 localStorage
   useEffect(() => {
     if (!loading && !useSupabase) {
-      // 立即同步到 localStorage（包括空列表）
-      localStorage.setItem('badcaseList', JSON.stringify(badcaseList));
-      console.log(`💾 数据已保存到 localStorage (共 ${badcaseList.length} 条)`);
+      try {
+        // 检查数据大小（localStorage 限制通常为 5-10MB）
+        const dataString = JSON.stringify(badcaseList);
+        const dataSizeMB = new Blob([dataString]).size / (1024 * 1024);
+        
+        if (dataSizeMB > 4) { // 如果超过 4MB，提示用户
+          console.warn(`⚠️ 数据大小 ${dataSizeMB.toFixed(2)}MB，接近 localStorage 限制`);
+        }
+        
+        // 立即同步到 localStorage（包括空列表）
+        localStorage.setItem('badcaseList', dataString);
+        console.log(`💾 数据已保存到 localStorage (共 ${badcaseList.length} 条，大小: ${dataSizeMB.toFixed(2)}MB)`);
+      } catch (error: any) {
+        if (error.name === 'QuotaExceededError') {
+          console.error('❌ localStorage 配额超出，请使用 Supabase 数据库');
+          message.error('存储空间不足！音频文件过大，请配置 Supabase 数据库以支持音频文件存储。请检查 .env.local 文件中的 Supabase 配置。');
+        } else {
+          console.error('❌ 保存到 localStorage 失败:', error);
+        }
+      }
     }
   }, [badcaseList, useSupabase, loading]);
 
@@ -215,12 +233,22 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
         // 使用 localStorage - 立即同步
         const updatedList = [badcase, ...badcaseList];
         
-        // 立即保存到 localStorage
-        localStorage.setItem('badcaseList', JSON.stringify(updatedList));
-        console.log('💾 新增已立即保存到 localStorage:', badcase.id);
-        
-        // 更新状态
-        setBadcaseList(updatedList);
+        try {
+          // 立即保存到 localStorage
+          localStorage.setItem('badcaseList', JSON.stringify(updatedList));
+          console.log('💾 新增已立即保存到 localStorage:', badcase.id);
+          
+          // 更新状态
+          setBadcaseList(updatedList);
+        } catch (error: any) {
+          if (error.name === 'QuotaExceededError') {
+            console.error('❌ localStorage 配额超出');
+            message.error('存储空间不足！音频文件过大，请配置 Supabase 数据库以支持音频文件存储。请检查 .env.local 文件中的 Supabase 配置。');
+            throw new Error('存储空间不足，请配置 Supabase 数据库');
+          } else {
+            throw error;
+          }
+        }
       }
     } catch (error: any) {
       console.error('❌ 添加 Badcase 失败:', error);
@@ -250,12 +278,22 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
             : item
         );
         
-        // 立即保存到 localStorage
-        localStorage.setItem('badcaseList', JSON.stringify(updatedList));
-        console.log('💾 更新已立即保存到 localStorage:', id);
-        
-        // 更新状态
-        setBadcaseList(updatedList);
+        try {
+          // 立即保存到 localStorage
+          localStorage.setItem('badcaseList', JSON.stringify(updatedList));
+          console.log('💾 更新已立即保存到 localStorage:', id);
+          
+          // 更新状态
+          setBadcaseList(updatedList);
+        } catch (error: any) {
+          if (error.name === 'QuotaExceededError') {
+            console.error('❌ localStorage 配额超出');
+            message.error('存储空间不足！音频文件过大，请配置 Supabase 数据库以支持音频文件存储。请检查 .env.local 文件中的 Supabase 配置。');
+            throw new Error('存储空间不足，请配置 Supabase 数据库');
+          } else {
+            throw error;
+          }
+        }
       }
     } catch (error: any) {
       console.error('❌ 更新 Badcase 失败:', error);
