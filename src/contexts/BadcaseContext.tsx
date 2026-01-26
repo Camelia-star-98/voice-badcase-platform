@@ -12,6 +12,8 @@ interface BadcaseContextType {
   refreshList: () => Promise<void>;
   loading: boolean;
   useSupabase: boolean;
+  currentBusiness: string;
+  setCurrentBusiness: (business: string) => void;
 }
 
 const BadcaseContext = createContext<BadcaseContextType | undefined>(undefined);
@@ -20,6 +22,17 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [badcaseList, setBadcaseList] = useState<BadcaseData[]>([]);
   const [loading, setLoading] = useState(true);
   const [useSupabase, setUseSupabase] = useState(false);
+  const [currentBusiness, setCurrentBusiness] = useState<string>('next');
+
+  // 根据业务方向获取表名
+  const getTableName = (business: string) => {
+    return business === 'fengling' ? 'badcases_fengling' : 'badcases';
+  };
+
+  // 根据业务方向获取 localStorage key
+  const getLocalStorageKey = (business: string) => {
+    return `badcaseList_${business}`;
+  };
 
   // 初始化：检查 Supabase 连接并加载数据
   useEffect(() => {
@@ -31,42 +44,51 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
         setUseSupabase(isConnected);
 
         if (isConnected) {
-          console.log('🌐 使用 Supabase 数据库');
+          console.log(`🌐 使用 Supabase 数据库 (${currentBusiness})`);
           // 从 Supabase 加载数据
-          const data = await badcaseApi.getAllBadcases();
+          const data = await badcaseApi.getAllBadcases(getTableName(currentBusiness));
           setBadcaseList(data);
-          console.log(`✅ 从 Supabase 加载了 ${data.length} 条数据`);
+          console.log(`✅ 从 Supabase 加载了 ${data.length} 条数据 (${currentBusiness})`);
         } else {
-          console.log('💾 使用本地 localStorage');
+          console.log(`💾 使用本地 localStorage (${currentBusiness})`);
           // 使用 localStorage
-          const savedData = localStorage.getItem('badcaseList');
+          const storageKey = getLocalStorageKey(currentBusiness);
+          const savedData = localStorage.getItem(storageKey);
           if (savedData) {
             try {
               const parsed = JSON.parse(savedData);
               setBadcaseList(parsed);
-              console.log(`✅ 从 localStorage 加载了 ${parsed.length} 条数据`);
+              console.log(`✅ 从 localStorage 加载了 ${parsed.length} 条数据 (${currentBusiness})`);
             } catch (e) {
               console.error('❌ 解析 localStorage 数据失败:', e);
-              setBadcaseList(mockBadcaseList);
+              setBadcaseList(currentBusiness === 'next' ? mockBadcaseList : []);
             }
           } else {
-            // 如果 localStorage 为空，使用 mock 数据
+            // 如果 localStorage 为空
+            if (currentBusiness === 'next') {
+              // Next 方向使用 mock 数据
             setBadcaseList(mockBadcaseList);
-            console.log(`✅ 使用 Mock 数据，共 ${mockBadcaseList.length} 条`);
+              console.log(`✅ 使用 Mock 数据，共 ${mockBadcaseList.length} 条 (${currentBusiness})`);
+            } else {
+              // 风灵方向使用空数组
+              setBadcaseList([]);
+              console.log(`✅ 初始化空数据 (${currentBusiness})`);
+            }
           }
         }
       } catch (error) {
         console.error('❌ 初始化数据失败:', error);
         // 降级到 localStorage
-        const savedData = localStorage.getItem('badcaseList');
+        const storageKey = getLocalStorageKey(currentBusiness);
+        const savedData = localStorage.getItem(storageKey);
         if (savedData) {
           try {
             setBadcaseList(JSON.parse(savedData));
           } catch {
-            setBadcaseList(mockBadcaseList);
+            setBadcaseList(currentBusiness === 'next' ? mockBadcaseList : []);
           }
         } else {
-          setBadcaseList(mockBadcaseList);
+          setBadcaseList(currentBusiness === 'next' ? mockBadcaseList : []);
         }
         setUseSupabase(false);
       } finally {
@@ -75,7 +97,7 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
     };
 
     initializeData();
-  }, []);
+  }, [currentBusiness]); // 依赖 currentBusiness，切换业务方向时重新加载数据
 
   // 🚀 Supabase Realtime 订阅 - 实时同步数据
   useEffect(() => {
@@ -84,20 +106,21 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
       return;
     }
 
-    console.log('🔔 启动 Supabase Realtime 订阅...');
+    const tableName = getTableName(currentBusiness);
+    console.log(`🔔 启动 Supabase Realtime 订阅... (${tableName})`);
 
-    // 订阅 badcases 表的所有变化
+    // 订阅对应业务方向表的所有变化
     const channel = supabase
-      .channel('badcases-changes')
+      .channel(`${tableName}-changes`)
       .on(
         'postgres_changes',
         {
           event: '*', // 监听所有事件：INSERT, UPDATE, DELETE
           schema: 'public',
-          table: 'badcases',
+          table: tableName,
         },
         (payload) => {
-          console.log('🔔 收到数据库变化:', payload);
+          console.log(`🔔 收到数据库变化 (${tableName}):`, payload);
 
           switch (payload.eventType) {
             case 'INSERT':
@@ -114,6 +137,7 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
                 category: newRecordRaw.category,
                 expectedFixDate: newRecordRaw.expected_fix_date,
                 status: newRecordRaw.status,
+                priority: newRecordRaw.priority,
                 description: newRecordRaw.description,
                 audioUrl: newRecordRaw.audio_url,
                 videoUrl: newRecordRaw.video_url,
@@ -147,6 +171,7 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
                 category: updatedRecordRaw.category,
                 expectedFixDate: updatedRecordRaw.expected_fix_date,
                 status: updatedRecordRaw.status,
+                priority: updatedRecordRaw.priority,
                 description: updatedRecordRaw.description,
                 audioUrl: updatedRecordRaw.audio_url,
                 videoUrl: updatedRecordRaw.video_url,
@@ -179,45 +204,47 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Realtime 订阅成功');
+          console.log(`✅ Realtime 订阅成功 (${tableName})`);
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Realtime 订阅失败');
+          console.error(`❌ Realtime 订阅失败 (${tableName})`);
         } else if (status === 'TIMED_OUT') {
-          console.error('⏱️ Realtime 订阅超时');
+          console.error(`⏱️ Realtime 订阅超时 (${tableName})`);
         } else {
-          console.log('📡 Realtime 状态:', status);
+          console.log(`📡 Realtime 状态 (${tableName}):`, status);
         }
       });
 
     // 清理函数：组件卸载时取消订阅
     return () => {
-      console.log('🔇 取消 Realtime 订阅');
+      console.log(`🔇 取消 Realtime 订阅 (${tableName})`);
       supabase.removeChannel(channel);
     };
-  }, [useSupabase]);
+  }, [useSupabase, currentBusiness]); // 依赖 currentBusiness，切换业务时重新订阅
 
   // 当不使用 Supabase 时，保存到 localStorage
   useEffect(() => {
     if (!loading && !useSupabase) {
       // 立即同步到 localStorage（包括空列表）
-      localStorage.setItem('badcaseList', JSON.stringify(badcaseList));
-      console.log(`💾 数据已保存到 localStorage (共 ${badcaseList.length} 条)`);
+      const storageKey = getLocalStorageKey(currentBusiness);
+      localStorage.setItem(storageKey, JSON.stringify(badcaseList));
+      console.log(`💾 数据已保存到 localStorage (共 ${badcaseList.length} 条, ${currentBusiness})`);
     }
-  }, [badcaseList, useSupabase, loading]);
+  }, [badcaseList, useSupabase, loading, currentBusiness]);
 
   const addBadcase = async (badcase: BadcaseData) => {
     try {
       if (useSupabase) {
         // 使用 Supabase
-        const created = await badcaseApi.createBadcase(badcase);
+        const created = await badcaseApi.createBadcase(badcase, getTableName(currentBusiness));
         setBadcaseList((prev) => [created, ...prev]);
       } else {
         // 使用 localStorage - 立即同步
         const updatedList = [badcase, ...badcaseList];
         
         // 立即保存到 localStorage
-        localStorage.setItem('badcaseList', JSON.stringify(updatedList));
-        console.log('💾 新增已立即保存到 localStorage:', badcase.id);
+        const storageKey = getLocalStorageKey(currentBusiness);
+        localStorage.setItem(storageKey, JSON.stringify(updatedList));
+        console.log(`💾 新增已立即保存到 localStorage: ${badcase.id} (${currentBusiness})`);
         
         // 更新状态
         setBadcaseList(updatedList);
@@ -234,7 +261,7 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       if (useSupabase) {
         // 使用 Supabase
-        const updated = await badcaseApi.updateBadcase(id, updates);
+        const updated = await badcaseApi.updateBadcase(id, updates, getTableName(currentBusiness));
         setBadcaseList((prev) =>
           prev.map((item) => (item.id === id ? updated : item))
         );
@@ -251,8 +278,9 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
         );
         
         // 立即保存到 localStorage
-        localStorage.setItem('badcaseList', JSON.stringify(updatedList));
-        console.log('💾 更新已立即保存到 localStorage:', id);
+        const storageKey = getLocalStorageKey(currentBusiness);
+        localStorage.setItem(storageKey, JSON.stringify(updatedList));
+        console.log(`💾 更新已立即保存到 localStorage: ${id} (${currentBusiness})`);
         
         // 更新状态
         setBadcaseList(updatedList);
@@ -269,13 +297,13 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       if (useSupabase) {
         // 使用 Supabase
-        await badcaseApi.deleteBadcase(id);
+        await badcaseApi.deleteBadcase(id, getTableName(currentBusiness));
         setBadcaseList((prev) => prev.filter((item) => item.id !== id));
-        console.log('✅ 已从 Supabase 删除:', id);
+        console.log(`✅ 已从 Supabase 删除: ${id} (${currentBusiness})`);
       } else {
         // 使用 localStorage
         setBadcaseList((prev) => prev.filter((item) => item.id !== id));
-        console.log('✅ 已从 localStorage 删除:', id);
+        console.log(`✅ 已从 localStorage 删除: ${id} (${currentBusiness})`);
       }
     } catch (error: any) {
       console.error('❌ 删除 Badcase 失败:', error);
@@ -289,9 +317,9 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       if (useSupabase) {
         setLoading(true);
-        const data = await badcaseApi.getAllBadcases();
+        const data = await badcaseApi.getAllBadcases(getTableName(currentBusiness));
         setBadcaseList(data);
-        console.log('✅ 数据已刷新');
+        console.log(`✅ 数据已刷新 (${currentBusiness})`);
       } else {
         // localStorage 模式下，只需触发重新渲染
         setBadcaseList([...badcaseList]);
@@ -313,6 +341,8 @@ export const BadcaseProvider: React.FC<{ children: ReactNode }> = ({ children })
         refreshList,
         loading,
         useSupabase,
+        currentBusiness,
+        setCurrentBusiness,
       }}
     >
       {children}

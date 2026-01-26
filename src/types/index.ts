@@ -11,7 +11,9 @@ export interface BadcaseData {
   expectedFixDate: string; // 期望修复时间
   status: 'pending' | 'algorithm_processing' | 'engineering_processing' | 'resolved' | 'processing';
   priority?: 'P00' | 'P0' | 'P1' | 'P2'; // 修复优先级：P00-立刻修复, P0-多天内修复, P1-多周内修复, P2-可先不修
-  description: string;
+  description: string; // 问题描述（兼容旧数据）
+  problemDescription?: string; // 问题描述：出现的问题，以及期望的结果（Next方向）
+  problemText?: string; // 问题文本：出现问题的原始文本，至少是一条完整单句（Next方向）
   audioUrl?: string;
   videoUrl?: string; // 视频文件URL
   modelId?: string; // 问题模型ID

@@ -1,61 +1,74 @@
-import { Card, Row, Col, Statistic } from 'antd';
+import { Card, Row, Col, Button } from 'antd';
 import {
-  SoundOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  WarningOutlined,
+  RightOutlined,
+  RocketOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import './HomePage.css';
 
 const HomePage = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="home-page">
       <h1>欢迎使用语音Badcase数据可视化平台</h1>
+      <p className="home-subtitle">请选择业务方向进入对应的Badcase管理系统</p>
       
-      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="总Badcase数"
-              value={1289}
-              prefix={<SoundOutlined />}
-              valueStyle={{ color: '#3f8600' }}
-            />
+      {/* 业务方向选择 */}
+      <Row gutter={[24, 24]} style={{ marginTop: 40 }}>
+        <Col xs={24} lg={12}>
+          <Card 
+            className="business-card next-card"
+            hoverable
+            onClick={() => navigate('/business-portal?business=next')}
+          >
+            <div className="business-card-content">
+              <div className="business-icon next-icon">
+                <RocketOutlined />
+              </div>
+              <div className="business-info">
+                <h2>Next方向</h2>
+                <Button 
+                  type="primary" 
+                  size="large"
+                  icon={<RightOutlined />}
+                  className="enter-btn next-btn"
+                >
+                  进入Next方向badcase提报
+                </Button>
+              </div>
+            </div>
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="已解决"
-              value={856}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="处理中"
-              value={234}
-              prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="待处理"
-              value={199}
-              prefix={<WarningOutlined />}
-              valueStyle={{ color: '#faad14' }}
-            />
+
+        <Col xs={24} lg={12}>
+          <Card 
+            className="business-card fengling-card"
+            hoverable
+            onClick={() => navigate('/business-portal?business=fengling')}
+          >
+            <div className="business-card-content">
+              <div className="business-icon fengling-icon">
+                <ThunderboltOutlined />
+              </div>
+              <div className="business-info">
+                <h2>风灵方向</h2>
+                <Button 
+                  type="primary" 
+                  size="large"
+                  icon={<RightOutlined />}
+                  className="enter-btn fengling-btn"
+                >
+                  进入风灵方向badcase提报
+                </Button>
+              </div>
+            </div>
           </Card>
         </Col>
       </Row>
 
-      <Card style={{ marginTop: 24 }} title="平台功能">
+      <Card style={{ marginTop: 40 }} title="平台功能">
         <Row gutter={[16, 16]}>
           <Col xs={24} md={12}>
             <Card type="inner" title="📊 数据可视化">
@@ -84,10 +97,10 @@ const HomePage = () => {
 
       <Card style={{ marginTop: 24 }} title="快速开始">
         <ol>
-          <li>点击左侧导航栏"数据可视化"查看统计图表</li>
+          <li>选择对应的业务方向（Next或风灵）进入系统</li>
+          <li>点击左侧导航栏"数据统计"查看统计图表</li>
           <li>点击"Badcase列表"浏览和管理所有Badcase</li>
           <li>使用筛选器快速定位特定类型的Badcase</li>
-          <li>导出数据进行深度分析</li>
         </ol>
       </Card>
     </div>

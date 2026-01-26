@@ -4,6 +4,30 @@
 
 .badcase-list-page .filter-card {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 20px;
+  background: #fff;
+}
+
+.badcase-list-page .filter-card .ant-select,
+.badcase-list-page .filter-card .ant-input,
+.badcase-list-page .filter-card .ant-picker {
+  transition: all 0.3s ease;
+}
+
+.badcase-list-page .filter-card .ant-select:hover,
+.badcase-list-page .filter-card .ant-input:hover,
+.badcase-list-page .filter-card .ant-picker:hover {
+  border-color: #667eea;
+}
+
+.badcase-list-page .filter-card .ant-btn {
+  transition: all 0.3s ease;
+}
+
+.badcase-list-page .filter-card .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .badcase-list-page .ant-card {

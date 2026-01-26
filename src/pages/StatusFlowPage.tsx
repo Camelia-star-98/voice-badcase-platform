@@ -5,7 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import type { Dayjs } from 'dayjs';
 import { SearchOutlined, EyeOutlined, PlayCircleOutlined, LockOutlined, DeleteOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
-import { getSubjectList, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresFullTtsLessonId, requiresModelId } from '../config/subjectModelMapping';
+import { getSubjectList, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresModelId } from '../config/subjectModelMapping';
 import { useBadcase } from '../contexts/BadcaseContext';
 import { CATEGORY_OPTIONS } from '../constants/categories';
 import {
@@ -693,26 +693,14 @@ const StatusFlowPage = () => {
                 </Select>
               </div>
 
-              {/* CMS课节ID */}
+              {/* 相关课节ID */}
               {requiresCmsId(editedRecord.location || '') && (
                 <div>
-                  <div style={{ marginBottom: 8, fontWeight: 500 }}>CMS课节ID</div>
+                  <div style={{ marginBottom: 8, fontWeight: 500 }}>相关课节ID</div>
                   <Input
                     value={editedRecord.cmsId}
                     onChange={(e) => handleFieldChange('cmsId', e.target.value)}
-                    placeholder="请输入CMS课节ID"
-                  />
-                </div>
-              )}
-
-              {/* 全程TTS课节ID */}
-              {requiresFullTtsLessonId(editedRecord.location || '') && (
-                <div>
-                  <div style={{ marginBottom: 8, fontWeight: 500 }}>全程TTS课节ID</div>
-                  <Input
-                    value={editedRecord.fullTtsLessonId}
-                    onChange={(e) => handleFieldChange('fullTtsLessonId', e.target.value)}
-                    placeholder="请输入全程TTS课节ID"
+                    placeholder="请输入相关课节ID"
                   />
                 </div>
               )}

@@ -7,7 +7,7 @@ import type { UploadFile } from 'antd/es/upload/interface';
 import { SearchOutlined, EyeOutlined, PlayCircleOutlined, UploadOutlined, CloudUploadOutlined, VideoCameraOutlined, DownloadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { BadcaseData } from '../types';
-import { getSubjectList, getModelsBySubjectAndLocation, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresFullTtsLessonId, requiresModelId } from '../config/subjectModelMapping';
+import { getSubjectList, getModelsBySubjectAndLocation, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresModelId } from '../config/subjectModelMapping';
 import { useBadcase } from '../contexts/BadcaseContext';
 import { CATEGORY_OPTIONS } from '../constants/categories';
 import { 
@@ -224,18 +224,11 @@ const BadcaseListPage = () => {
       onFilter: (value, record) => record.location === value,
     },
     {
-      title: 'CMS课节ID',
+      title: '相关课节ID',
       dataIndex: 'cmsId',
       key: 'cmsId',
       width: 150,
       render: (cmsId: string) => cmsId || '-',
-    },
-    {
-      title: '全程TTS课节ID',
-      dataIndex: 'fullTtsLessonId',
-      key: 'fullTtsLessonId',
-      width: 150,
-      render: (fullTtsLessonId: string) => fullTtsLessonId || '-',
     },
     {
       title: '问题提报人',
@@ -607,8 +600,7 @@ const BadcaseListPage = () => {
         date: currentDate, // 使用当前日期作为提交日期
         subject: values.subject, // 保存学科
         location: values.location, // 保存出现位置
-        fullTtsLessonId: requiresFullTtsLessonId(values.location) ? values.fullTtsLessonId : undefined, // 全程TTS课节ID
-        cmsId: requiresCmsId(values.location) ? values.cmsId : undefined, // CMS课节ID
+        cmsId: requiresCmsId(values.location) ? values.cmsId : undefined, // 相关课节ID
         reporter: values.reporter, // 保存问题提报人
         category: finalCategory,
         expectedFixDate: values.expectedFixDate.format('YYYY-MM-DD'),
@@ -872,13 +864,8 @@ const BadcaseListPage = () => {
             <Descriptions.Item label="出现位置" span={2}>
               {selectedRecord.location ? getLocationLabel(selectedRecord.location) : '未填写'}
             </Descriptions.Item>
-            {requiresFullTtsLessonId(selectedRecord.location || '') && selectedRecord.fullTtsLessonId && (
-              <Descriptions.Item label="全程TTS课节ID" span={2}>
-                {selectedRecord.fullTtsLessonId}
-              </Descriptions.Item>
-            )}
             {requiresCmsId(selectedRecord.location || '') && selectedRecord.cmsId && (
-              <Descriptions.Item label="CMS课节ID" span={2}>
+              <Descriptions.Item label="相关课节ID" span={2}>
                 {selectedRecord.cmsId}
               </Descriptions.Item>
             )}
@@ -1019,23 +1006,13 @@ const BadcaseListPage = () => {
           </Form.Item>
 
           {/* 根据出现位置显示不同的ID输入框 */}
-          {requiresFullTtsLessonId(selectedLocation) && (
-            <Form.Item
-              name="fullTtsLessonId"
-              label="全程TTS课节ID"
-              rules={[{ required: true, message: '请输入全程TTS课节ID' }]}
-            >
-              <Input placeholder="请输入全程TTS课节ID" />
-            </Form.Item>
-          )}
-
           {requiresCmsId(selectedLocation) && (
             <Form.Item
               name="cmsId"
-              label="CMS课节ID"
-              rules={[{ required: true, message: '请输入CMS课节ID' }]}
+              label="相关课节ID"
+              rules={[{ required: true, message: '请输入相关课节ID' }]}
             >
-              <Input placeholder="请输入CMS课节ID" />
+              <Input placeholder="请输入相关课节ID" />
             </Form.Item>
           )}
 
