@@ -277,7 +277,7 @@ const StatusFlowPage = () => {
       render: (reporter: string) => reporter || '未填写',
     },
     {
-      title: '大小模型',
+      title: () => <div style={{ whiteSpace: 'nowrap' }}>大小模型</div>,
       dataIndex: 'modelSize',
       key: 'modelSize',
       width: 100,
