@@ -1,21 +1,47 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Table, Card, Space, Tag, Input, Select, Button, Modal, Descriptions, Form, Upload, message, DatePicker } from 'antd';
+import type { Dayjs } from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { SearchOutlined, EyeOutlined, PlayCircleOutlined, UploadOutlined, CloudUploadOutlined, VideoCameraOutlined } from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, PlayCircleOutlined, UploadOutlined, CloudUploadOutlined, VideoCameraOutlined, DownloadOutlined } from '@ant-design/icons';
+import * as XLSX from 'xlsx';
 import { BadcaseData } from '../types';
 import { getSubjectList, getModelsBySubjectAndLocation, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresFullTtsLessonId, requiresModelId } from '../config/subjectModelMapping';
 import { useBadcase } from '../contexts/BadcaseContext';
 import { CATEGORY_OPTIONS } from '../constants/categories';
+import { 
+  getPriorityOptions, 
+  getPriorityColor, 
+  getPriorityText,
+  getCategoryOptions,
+  getAllCategoryOptions,
+  getCategoryLabel,
+  getSubcategoryOptions,
+  type BusinessType
+} from '../constants/businessConfig';
 import dayjs from 'dayjs';
 import AudioPlayer from '../components/AudioPlayer';
+import BackButton from '../components/BackButton';
 import './BadcaseListPage.css';
 
 const { Option } = Select;
 const { TextArea } = Input;
+const { RangePicker } = DatePicker;
 
 const BadcaseListPage = () => {
-  const { badcaseList, addBadcase } = useBadcase();
+  const [searchParams] = useSearchParams();
+  const { badcaseList, addBadcase, currentBusiness, setCurrentBusiness } = useBadcase();
+  
+  // 从 URL 参数获取业务方向
+  useEffect(() => {
+    const business = searchParams.get('business') || 'next';
+    setCurrentBusiness(business);
+  }, [searchParams, setCurrentBusiness]);
+  
+  // 获取当前业务方向，用于返回按钮
+  const business = (searchParams.get('business') || 'next') as BusinessType;
+  
   const [dataSource, setDataSource] = useState<BadcaseData[]>(badcaseList);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -27,17 +53,21 @@ const BadcaseListPage = () => {
   const [uploadForm] = Form.useForm();
   const [audioFileList, setAudioFileList] = useState<UploadFile[]>([]);
   const [videoFileList, setVideoFileList] = useState<UploadFile[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedMainCategory, setSelectedMainCategory] = useState<string>(''); // 风灵：主分类
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');   // 风灵：子分类
+  const [selectedCategory, setSelectedCategory] = useState<string>('');         // Next：分类
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [audioPlayerVisible, setAudioPlayerVisible] = useState(false);
   const [currentAudioUrl, setCurrentAudioUrl] = useState('');
   const [currentRecordId, setCurrentRecordId] = useState('');
   const [videoPlayerVisible, setVideoPlayerVisible] = useState(false);
   const [currentVideoUrl, setCurrentVideoUrl] = useState('');
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   // 同步 badcaseList 到 dataSource，并按ID降序排列（新到旧）
   useEffect(() => {
@@ -72,24 +102,25 @@ const BadcaseListPage = () => {
     return texts[status as keyof typeof texts] || status;
   };
 
-  const getPriorityColor = (priority?: string) => {
-    const colors = {
-      P00: 'red',      // 立刻修复 - 红色
-      P0: 'orange',    // 多天内修复 - 橙色
-      P1: 'blue',      // 多周内修复 - 蓝色
-      P2: 'default',   // 可先不修 - 灰色
-    };
-    return colors[priority as keyof typeof colors] || 'default';
+  // 移除本地的优先级函数，使用导入的统一配置
+  // const getPriorityColor 和 getPriorityText 现在从 businessConfig 导入
+  
+  // 根据业务方向生成分类筛选器
+  const getCategoryFilters = () => {
+    const options = getAllCategoryOptions(business);
+    return options.map(opt => ({ text: opt.label, value: opt.value }));
   };
-
-  const getPriorityText = (priority?: string) => {
-    const texts = {
-      P00: 'P00：立刻修复',
-      P0: 'P0：多天内修复',
-      P1: 'P1：多周内修复',
-      P2: 'P2：可先不修',
-    };
-    return texts[priority as keyof typeof texts] || 'P1：多周内修复';
+  
+  // 根据业务方向生成优先级筛选器
+  const getPriorityFilters = () => {
+    const options = getPriorityOptions(business);
+    const filters = options.map(opt => ({ text: opt.label, value: opt.value }));
+    return [...filters, { text: '未填写', value: '__none__' }];
+  };
+  
+  // 根据业务方向验证优先级值
+  const getValidPriorities = () => {
+    return getPriorityOptions(business).map(opt => opt.value);
   };
 
   const columns: ColumnsType<BadcaseData> = [
@@ -105,15 +136,8 @@ const BadcaseListPage = () => {
       dataIndex: 'category',
       key: 'category',
       width: 150,
-      filters: [
-        { text: '读音错误', value: '读音错误' },
-        { text: '停顿不当', value: '停顿不当' },
-        { text: '重读不对', value: '重读不对' },
-        { text: '语速突变', value: '语速突变' },
-        { text: '音量突变', value: '音量突变' },
-        { text: '音质问题', value: '音质问题' },
-        { text: '其他', value: '其他' },
-      ],
+      render: (category: string) => getCategoryLabel(category, business),
+      filters: getCategoryFilters(),
       onFilter: (value, record) => record.category === value,
     },
     {
@@ -129,7 +153,6 @@ const BadcaseListPage = () => {
         { text: '算法处理中', value: 'algorithm_processing' },
         { text: '工程处理中', value: 'engineering_processing' },
         { text: '已解决', value: 'resolved' },
-        { text: '处理中', value: 'processing' },
       ],
       onFilter: (value, record) => record.status === value,
     },
@@ -140,7 +163,7 @@ const BadcaseListPage = () => {
       width: 180,
       render: (priority?: string) => (
         <Tag 
-          color={getPriorityColor(priority)}
+          color={getPriorityColor(priority, business)}
           style={{ 
             margin: 0,
             padding: '4px 12px',
@@ -149,21 +172,28 @@ const BadcaseListPage = () => {
             whiteSpace: 'nowrap'
           }}
         >
-          {getPriorityText(priority)}
+          {getPriorityText(priority, business)}
         </Tag>
       ),
-      filters: [
-        { text: 'P00：立刻修复', value: 'P00' },
-        { text: 'P0：多天内修复', value: 'P0' },
-        { text: 'P1：多周内修复', value: 'P1' },
-        { text: 'P2：可先不修', value: 'P2' },
-      ],
-      onFilter: (value, record) => (record.priority || 'P1') === value,
+      filters: getPriorityFilters(),
+      onFilter: (value, record) => {
+        if (value === '__none__') {
+          // 未设置：排除所有有效的优先级值
+          const validPriorities = getValidPriorities();
+          return !record.priority || !validPriorities.includes(record.priority);
+        }
+        return record.priority === value;
+      },
       sorter: (a, b) => {
-        const priorityOrder = { P00: 4, P0: 3, P1: 2, P2: 1 };
-        const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 2;
-        const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 2;
-        return bPriority - aPriority; // P00优先级最高，在前
+        // 动态生成优先级排序
+        const validPriorities = getValidPriorities();
+        const priorityOrder: Record<string, number> = {};
+        validPriorities.forEach((p, index) => {
+          priorityOrder[p] = validPriorities.length - index;
+        });
+        const aPriority = priorityOrder[a.priority || ''] || 0;
+        const bPriority = priorityOrder[b.priority || ''] || 0;
+        return bPriority - aPriority; // 最高优先级在前
       },
     },
     {
@@ -194,17 +224,18 @@ const BadcaseListPage = () => {
       onFilter: (value, record) => record.location === value,
     },
     {
-      title: '课节ID',
-      key: 'lessonId',
+      title: 'CMS课节ID',
+      dataIndex: 'cmsId',
+      key: 'cmsId',
       width: 150,
-      render: (_, record) => {
-        if (requiresFullTtsLessonId(record.location || '')) {
-          return record.fullTtsLessonId || '-';
-        } else if (requiresCmsId(record.location || '')) {
-          return record.cmsId || '-';
-        }
-        return '-';
-      },
+      render: (cmsId: string) => cmsId || '-',
+    },
+    {
+      title: '全程TTS课节ID',
+      dataIndex: 'fullTtsLessonId',
+      key: 'fullTtsLessonId',
+      width: 150,
+      render: (fullTtsLessonId: string) => fullTtsLessonId || '-',
     },
     {
       title: '问题提报人',
@@ -333,7 +364,27 @@ const BadcaseListPage = () => {
       }
 
       if (priorityFilter !== 'all') {
-        filtered = filtered.filter((item) => (item.priority || 'P1') === priorityFilter);
+        filtered = filtered.filter((item) => {
+          if (priorityFilter === 'none') return !item.priority;
+          return item.priority === priorityFilter;
+        });
+      }
+
+      // 日期范围筛选
+      if (dateRange && dateRange[0] && dateRange[1]) {
+        const [startDate, endDate] = dateRange;
+        filtered = filtered.filter((item) => {
+          const itemDate = dayjs(item.date);
+          return (itemDate.isAfter(startDate.subtract(1, 'day'), 'day') || itemDate.isSame(startDate, 'day')) &&
+                 (itemDate.isBefore(endDate.add(1, 'day'), 'day') || itemDate.isSame(endDate, 'day'));
+        });
+      } else if (dateRange && dateRange[0]) {
+        // 只选择了起始日期
+        const startDate = dateRange[0];
+        filtered = filtered.filter((item) => {
+          const itemDate = dayjs(item.date);
+          return itemDate.isAfter(startDate.subtract(1, 'day'), 'day') || itemDate.isSame(startDate, 'day');
+        });
       }
 
       // 按ID降序排列（新到旧）
@@ -354,6 +405,7 @@ const BadcaseListPage = () => {
     setStatusFilter('all');
     setSubjectFilter('all');
     setPriorityFilter('all');
+    setDateRange(null);
     // 按ID降序排列（新到旧）
     const sortedList = [...badcaseList].sort((a, b) => {
       const numA = parseInt(a.id.replace(/\D/g, ''), 10);
@@ -361,6 +413,93 @@ const BadcaseListPage = () => {
       return numB - numA;
     });
     setDataSource(sortedList);
+  };
+
+  // 处理长文本，避免Excel单元格超过32767字符限制
+  const truncateText = (text: string, maxLength: number = 32000): string => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...(已截断)';
+  };
+
+  // 处理URL，如果是base64编码的，只显示标识
+  const formatUrl = (url: string | undefined): string => {
+    if (!url) return '';
+    // 如果是base64编码的数据URL，只显示类型标识
+    if (url.startsWith('data:')) {
+      const match = url.match(/data:([^;]+)/);
+      if (match) {
+        return `[${match[1]}文件]`;
+      }
+      return '[文件]';
+    }
+    // 普通URL，如果太长则截断
+    return truncateText(url, 200);
+  };
+
+  // 导出Excel功能
+  const handleExportExcel = () => {
+    // 获取选中的记录
+    const selectedRecords = dataSource.filter(record => selectedRowKeys.includes(record.id));
+    
+    if (selectedRecords.length === 0) {
+      message.warning('请先选择要导出的case');
+      return;
+    }
+
+    // 按照图2的表头格式准备数据
+    const excelData = selectedRecords.map((record) => {
+      // 格式化优先级
+      let priorityText = '';
+      if (record.priority) {
+        priorityText = getPriorityText(record.priority, business);
+      } else {
+        priorityText = '未填写';
+      }
+
+      return {
+        'ID': record.id || '',
+        '问题文本': truncateText(record.problemText || ''),
+        '问题链接': '', // 直接为空，不读取数据表
+        '问题截图': '', // 直接为空，不读取数据表
+        '问题录屏': '', // 直接为空，不读取数据表
+        '问题音频': '', // 直接为空，不读取数据表
+        '问题描述': truncateText(record.problemDescription || record.description || ''),
+        '修复优先级': priorityText,
+        '反馈日期': record.date || '',
+        '反馈人': record.reporter || '', // 问题提报人，放在最后一列
+      };
+    });
+
+    // 创建工作簿
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // 设置列宽
+    ws['!cols'] = [
+      { wch: 15 }, // ID
+      { wch: 30 }, // 问题文本
+      { wch: 20 }, // 问题链接
+      { wch: 20 }, // 问题截图
+      { wch: 30 }, // 问题录屏
+      { wch: 30 }, // 问题音频
+      { wch: 40 }, // 问题描述
+      { wch: 20 }, // 修复优先级
+      { wch: 15 }, // 反馈日期
+      { wch: 15 }, // 反馈人
+    ];
+
+    // 添加工作表到工作簿
+    XLSX.utils.book_append_sheet(wb, ws, 'Badcase列表');
+
+    // 生成文件名（包含当前日期）
+    const fileName = `Next方向Badcase列表_${dayjs().format('YYYY-MM-DD')}.xlsx`;
+
+    // 导出文件
+    XLSX.writeFile(wb, fileName);
+    message.success(`成功导出 ${selectedRecords.length} 条数据`);
+    // 清空选择
+    setSelectedRowKeys([]);
   };
 
   const handleOpenUploadModal = () => {
@@ -474,8 +613,14 @@ const BadcaseListPage = () => {
         category: finalCategory,
         expectedFixDate: values.expectedFixDate.format('YYYY-MM-DD'),
         status: 'pending',
-        priority: values.priority || 'P1',
-        description: values.description,
+        priority: values.priority || undefined,
+        // Next方向：保存两个独立字段；风灵方向：保存description字段
+        description: business === 'next' 
+          ? (values.problemDescription || '') + (values.problemText ? `\n\n问题文本：${values.problemText}` : '')
+          : values.description,
+        problemDescription: business === 'next' ? values.problemDescription : undefined,
+        problemText: business === 'next' ? values.problemText : undefined,
+        remark: business === 'next' ? values.remark : undefined,
         audioUrl: audioUrl,
         videoUrl: videoUrl,
         modelId: requiresModelId(values.location) ? values.modelId : undefined, // 只在需要时保存问题模型ID
@@ -495,7 +640,6 @@ const BadcaseListPage = () => {
       setSelectedSubject('');
       setAvailableModels([]);
       setSelectedLocation('');
-      uploadForm.setFieldsValue({ priority: 'P1' }); // 重置优先级为默认值
     } catch (error) {
       console.error('表单验证失败:', error);
     }
@@ -545,21 +689,30 @@ const BadcaseListPage = () => {
 
   return (
     <div className="badcase-list-page">
-      <Card className="filter-card">
-        <Space wrap size="middle" style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Space wrap size="middle">
+      <BackButton to={`/business-portal?business=${business}`} />
+      
+      {/* 页面标题 */}
+      <h2 style={{ marginBottom: 16, fontSize: 24, fontWeight: 'bold' }}>
+        {business === 'fengling' ? '风灵方向badcase跟进' : 'NEXT方向badcase跟进'}
+      </h2>
+      
+      <Card className="filter-card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* 第一行：搜索和基础筛选 */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
             <Input
               placeholder="搜索ID或描述"
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 200 }}
+              style={{ width: 220 }}
               onPressEnter={handleSearch}
+              allowClear
             />
             <Select
               value={subjectFilter}
               onChange={setSubjectFilter}
-              style={{ width: 120 }}
+              style={{ width: 130 }}
               placeholder="选择学科"
             >
               <Option value="all">全部学科</Option>
@@ -573,6 +726,7 @@ const BadcaseListPage = () => {
               value={categoryFilter}
               onChange={setCategoryFilter}
               style={{ width: 150 }}
+              placeholder="全部分类"
             >
               <Option value="all">全部分类</Option>
               <Option value="读音错误">读音错误</Option>
@@ -587,53 +741,102 @@ const BadcaseListPage = () => {
               value={statusFilter}
               onChange={setStatusFilter}
               style={{ width: 150 }}
+              placeholder="全部状态"
             >
               <Option value="all">全部状态</Option>
               <Option value="pending">待处理</Option>
               <Option value="algorithm_processing">算法处理中</Option>
               <Option value="engineering_processing">工程处理中</Option>
               <Option value="resolved">已解决</Option>
-              <Option value="processing">处理中</Option>
             </Select>
             <Select
               value={priorityFilter}
               onChange={setPriorityFilter}
               style={{ width: 180 }}
+              placeholder="全部优先级"
             >
               <Option value="all">全部优先级</Option>
               <Option value="P00">P00：立刻修复</Option>
               <Option value="P0">P0：多天内修复</Option>
               <Option value="P1">P1：多周内修复</Option>
               <Option value="P2">P2：可先不修</Option>
+              <Option value="none">未设置</Option>
             </Select>
-            <Button type="primary" onClick={handleSearch}>
-              搜索
-            </Button>
-            <Button onClick={handleReset}>重置</Button>
-          </Space>
-          <Button 
-            type="primary" 
-            icon={<CloudUploadOutlined />}
-            onClick={handleOpenUploadModal}
-            size="large"
-            style={{ 
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: 'none',
-              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
-            }}
-          >
-            新建Badcase
-          </Button>
-        </Space>
+          </div>
+          
+          {/* 第二行：日期筛选和操作按钮 */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <RangePicker
+                value={dateRange}
+                onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null] | null)}
+                format="YYYY-MM-DD"
+                placeholder={['起始日期', '结束日期']}
+                style={{ width: 280 }}
+              />
+              <Button type="primary" onClick={handleSearch} icon={<SearchOutlined />}>
+                搜索
+              </Button>
+              <Button onClick={handleReset}>重置</Button>
+            </div>
+            <Space>
+              {business === 'next' && (
+                <Button 
+                  type="default"
+                  icon={<DownloadOutlined />}
+                  onClick={handleExportExcel}
+                  size="large"
+                  disabled={selectedRowKeys.length === 0}
+                  style={{ 
+                    height: 40,
+                    fontWeight: 500
+                  }}
+                >
+                  导出Excel{selectedRowKeys.length > 0 ? ` (${selectedRowKeys.length})` : ''}
+                </Button>
+              )}
+              <Button 
+                type="primary" 
+                icon={<CloudUploadOutlined />}
+                onClick={handleOpenUploadModal}
+                size="large"
+                style={{ 
+                  height: 40,
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  border: 'none',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
+                  fontWeight: 500
+                }}
+              >
+                新建Badcase
+              </Button>
+            </Space>
+          </div>
+        </div>
       </Card>
 
       <Card style={{ marginTop: 16 }}>
+        {business === 'next' && selectedRowKeys.length > 0 && (
+          <div style={{ marginBottom: 16, padding: '8px 16px', background: '#e6f7ff', borderRadius: 4 }}>
+            <Space>
+              <span>已选择 {selectedRowKeys.length} 条数据</span>
+              <Button size="small" onClick={() => setSelectedRowKeys([])}>清空选择</Button>
+            </Space>
+          </div>
+        )}
         <Table
           columns={columns}
           dataSource={dataSource}
           loading={loading}
           rowKey="id"
           scroll={{ x: 1200 }}
+          rowSelection={business === 'next' ? {
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys as string[]),
+            getCheckboxProps: (record) => ({
+              name: record.id,
+            }),
+          } : undefined}
           pagination={{
             showSizeChanger: true,
             showQuickJumper: true,
@@ -699,13 +902,27 @@ const BadcaseListPage = () => {
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="优先级">
-              <Tag color={getPriorityColor(selectedRecord.priority)}>
-                {getPriorityText(selectedRecord.priority)}
+              <Tag color={getPriorityColor(selectedRecord.priority, business)}>
+                {getPriorityText(selectedRecord.priority, business)}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="描述" span={2}>
-              {selectedRecord.description}
-            </Descriptions.Item>
+            {business === 'next' ? (
+              <>
+                <Descriptions.Item label="问题文本" span={2}>
+                  {selectedRecord.problemText || '未填写'}
+                </Descriptions.Item>
+                <Descriptions.Item label="问题描述" span={2}>
+                  {selectedRecord.problemDescription || selectedRecord.description || '未填写'}
+                </Descriptions.Item>
+                <Descriptions.Item label="备注" span={2}>
+                  {selectedRecord.remark || '未填写'}
+                </Descriptions.Item>
+              </>
+            ) : (
+              <Descriptions.Item label="描述" span={2}>
+                {selectedRecord.description}
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="创建时间" span={2}>
               {selectedRecord.createdAt}
             </Descriptions.Item>
@@ -850,22 +1067,68 @@ const BadcaseListPage = () => {
             </Form.Item>
           )}
 
-          <Form.Item
-            name="category"
-            label="分类"
-            rules={[{ required: true, message: '请选择分类' }]}
-          >
-            <Select 
-              placeholder="请选择问题分类"
-              onChange={(value) => setSelectedCategory(value)}
+          {/* 风灵方向：先选主分类，再选子分类 */}
+          {business === 'fengling' ? (
+            <>
+              <Form.Item
+                name="mainCategory"
+                label="主分类"
+                rules={[{ required: true, message: '请选择主分类' }]}
+              >
+                <Select 
+                  placeholder="请选择主分类（TTS/ASR/VAD）"
+                  onChange={(value) => {
+                  setSelectedMainCategory(value);
+                  setSelectedSubcategory('');
+                  // 清空子分类表单值
+                  uploadForm.setFieldsValue({ category: undefined });
+                }}
+              >
+                {getCategoryOptions(business).map(option => (
+                  <Option key={option.value} value={option.value}>
+                    {option.label}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+            
+            <Form.Item
+              name="category"
+              label="子分类"
+              rules={[{ required: true, message: '请选择子分类' }]}
             >
-              {CATEGORY_OPTIONS.map(option => (
-                <Option key={option.value} value={option.value}>
-                  {option.label}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+              <Select 
+                placeholder={selectedMainCategory ? "请选择具体问题类型" : "请先选择主分类"}
+                disabled={!selectedMainCategory}
+                onChange={(value) => setSelectedSubcategory(value)}
+              >
+                {getSubcategoryOptions(selectedMainCategory, business).map(option => (
+                  <Option key={option.value} value={option.value}>
+                    {option.label}
+                  </Option>
+                ))}
+              </Select>
+              </Form.Item>
+            </>
+          ) : (
+            /* Next方向：直接选择分类 */
+            <Form.Item
+              name="category"
+              label="分类"
+              rules={[{ required: true, message: '请选择分类' }]}
+            >
+              <Select 
+                placeholder="请选择问题分类"
+                onChange={(value) => setSelectedCategory(value)}
+              >
+                {CATEGORY_OPTIONS.map(option => (
+                  <Option key={option.value} value={option.value}>
+                    {option.label}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
 
           {/* 当选择"其他"时显示输入框 */}
           {selectedCategory === '其他' && (
@@ -900,33 +1163,78 @@ const BadcaseListPage = () => {
 
           <Form.Item
             name="priority"
-            label="修复优先级"
-            initialValue="P1"
-            rules={[{ required: true, message: '请选择修复优先级' }]}
+            label="修复优先级（可选）"
           >
-            <Select placeholder="请选择修复优先级">
-              <Option value="P00">P00：立刻修复</Option>
-              <Option value="P0">P0：多天内修复</Option>
-              <Option value="P1">P1：多周内修复</Option>
-              <Option value="P2">P2：可先不修</Option>
+            <Select placeholder="请选择修复优先级（可留空）" allowClear>
+              {getPriorityOptions(business).map(option => (
+                <Option key={option.value} value={option.value}>
+                  {option.label}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 
-          <Form.Item
-            name="description"
-            label="问题描述"
-            rules={[
-              { required: true, message: '请输入问题描述' },
-              { min: 10, message: '描述至少需要10个字符' }
-            ]}
-          >
-            <TextArea 
-              rows={4} 
-              placeholder="请给出以下信息：1、详细的每个问题描述 2、每个问题描述对应的问题文本。可一次提供多个问题，但每个问题需要分别描述并给出对应文本"
-              showCount
-              maxLength={500}
-            />
-          </Form.Item>
+          {business === 'next' ? (
+            <>
+              <Form.Item
+                name="problemText"
+                label="问题文本"
+                rules={[
+                  { required: true, message: '请输入问题文本' },
+                  { min: 5, message: '问题文本至少需要5个字符' }
+                ]}
+              >
+                <TextArea 
+                  rows={4} 
+                  placeholder="出现问题的原始文本，至少是一条完整单句"
+                  showCount
+                  maxLength={500}
+                />
+              </Form.Item>
+              <Form.Item
+                name="problemDescription"
+                label="问题描述"
+                rules={[
+                  { required: true, message: '请输入问题描述' },
+                  { min: 10, message: '描述至少需要10个字符' }
+                ]}
+              >
+                <TextArea 
+                  rows={4} 
+                  placeholder="出现的问题，以及期望的结果"
+                  showCount
+                  maxLength={500}
+                />
+              </Form.Item>
+              <Form.Item
+                name="remark"
+                label="备注"
+              >
+                <TextArea 
+                  rows={4} 
+                  placeholder="可在此处备注复现反馈、跟进状态、流转状态、当前效果说明等"
+                  showCount
+                  maxLength={500}
+                />
+              </Form.Item>
+            </>
+          ) : (
+            <Form.Item
+              name="description"
+              label="问题描述"
+              rules={[
+                { required: true, message: '请输入问题描述' },
+                { min: 10, message: '描述至少需要10个字符' }
+              ]}
+            >
+              <TextArea 
+                rows={4} 
+                placeholder="请给出以下信息：1、详细的每个问题描述 2、每个问题描述对应的问题文本。可一次提供多个问题，但每个问题需要分别描述并给出对应文本"
+                showCount
+                maxLength={500}
+              />
+            </Form.Item>
+          )}
 
           <Form.Item
             label="音频文件"
