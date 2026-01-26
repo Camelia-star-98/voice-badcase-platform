@@ -244,7 +244,8 @@ const BadcaseListPage = () => {
       width: 100,
       render: (modelSize: string) => {
         if (!modelSize) return '-';
-        return modelSize === 'large_model' ? '大模型' : '小模型';
+        const text = modelSize === 'large_model' ? '大模型' : '小模型';
+        return <span style={{ whiteSpace: 'nowrap' }}>{text}</span>;
       },
       filters: [
         { text: '大模型', value: 'large_model' },

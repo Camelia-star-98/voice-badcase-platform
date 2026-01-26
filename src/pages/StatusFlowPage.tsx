@@ -263,15 +263,11 @@ const StatusFlowPage = () => {
       },
     },
     {
-      title: '课节ID',
-      key: 'lessonId',
+      title: '相关课节ID',
+      dataIndex: 'cmsId',
+      key: 'cmsId',
       width: 150,
-      render: (_, record) => {
-        if (requiresCmsId(record.location || '')) {
-          return record.cmsId || '-';
-        }
-        return '-';
-      },
+      render: (cmsId: string) => cmsId || '-',
     },
     {
       title: '问题提报人',
@@ -279,6 +275,22 @@ const StatusFlowPage = () => {
       key: 'reporter',
       width: 120,
       render: (reporter: string) => reporter || '未填写',
+    },
+    {
+      title: '大小模型',
+      dataIndex: 'modelSize',
+      key: 'modelSize',
+      width: 100,
+      render: (modelSize: string) => {
+        if (!modelSize) return '-';
+        const text = modelSize === 'large_model' ? '大模型' : '小模型';
+        return <span style={{ whiteSpace: 'nowrap' }}>{text}</span>;
+      },
+      filters: [
+        { text: '大模型', value: 'large_model' },
+        { text: '小模型', value: 'small_model' },
+      ],
+      onFilter: (value, record) => record.modelSize === value,
     },
     {
       title: '期望修复时间',
