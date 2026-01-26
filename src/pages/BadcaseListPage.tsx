@@ -476,7 +476,18 @@ const BadcaseListPage = () => {
         '问题描述': truncateText(record.problemDescription || record.description || ''),
         '修复优先级': priorityText,
         '反馈日期': record.date || '',
-        '反馈人': record.reporter || '', // 问题提报人，放在最后一列
+        '反馈人': record.reporter || '', // 问题提报人
+        '问题音色': record.modelId || '', // 问题模型ID
+        '复现音频': '', // 空列
+        '复现反馈': '', // 空列
+        '问题体感类别': getCategoryLabel(record.category, business) || '', // 分类（问题分类）
+        '问题状态': '', // 空列
+        '当前效果音频': '', // 空列
+        '当前效果说明': '', // 空列
+        '问题处理日期': '', // 空列
+        '问题链路': '', // 空列
+        '问题处理人流转': '', // 空列
+        '备注': record.remark || '', // 备注内容
       };
     });
 
@@ -496,6 +507,17 @@ const BadcaseListPage = () => {
       { wch: 20 }, // 修复优先级
       { wch: 15 }, // 反馈日期
       { wch: 15 }, // 反馈人
+      { wch: 30 }, // 问题音色（问题模型ID）
+      { wch: 20 }, // 复现音频
+      { wch: 20 }, // 复现反馈
+      { wch: 20 }, // 问题体感类别（分类）
+      { wch: 15 }, // 问题状态
+      { wch: 20 }, // 当前效果音频
+      { wch: 30 }, // 当前效果说明
+      { wch: 15 }, // 问题处理日期
+      { wch: 20 }, // 问题链路
+      { wch: 20 }, // 问题处理人流转
+      { wch: 30 }, // 备注
     ];
 
     // 添加工作表到工作簿
