@@ -238,6 +238,21 @@ const BadcaseListPage = () => {
       render: (reporter: string) => reporter || '未填写',
     },
     {
+      title: '大小模型',
+      dataIndex: 'modelSize',
+      key: 'modelSize',
+      width: 100,
+      render: (modelSize: string) => {
+        if (!modelSize) return '-';
+        return modelSize === 'large_model' ? '大模型' : '小模型';
+      },
+      filters: [
+        { text: '大模型', value: 'large_model' },
+        { text: '小模型', value: 'small_model' },
+      ],
+      onFilter: (value, record) => record.modelSize === value,
+    },
+    {
       title: '问题模型ID',
       dataIndex: 'modelId',
       key: 'modelId',
