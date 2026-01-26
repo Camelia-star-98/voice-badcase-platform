@@ -15,6 +15,9 @@ dist-ssr
 # Environment variables (重要！)
 .env
 .env.local
+.env.local.test
+.env.local.prod
+.env.local.backup
 .env.production
 .env.development
 

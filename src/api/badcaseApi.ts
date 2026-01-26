@@ -5,6 +5,18 @@ import { BadcaseData } from '../types';
  * 数据库字段 -> 前端类型的映射
  */
 function mapDbToBadcaseData(dbData: any): BadcaseData {
+  // 如果description为空，尝试从problem_description和problem_text恢复
+  let description = dbData.description;
+  if (!description || description === '') {
+    if (dbData.problem_description && dbData.problem_text) {
+      description = dbData.problem_description + '\n\n问题文本：' + dbData.problem_text;
+    } else if (dbData.problem_description) {
+      description = dbData.problem_description;
+    } else if (dbData.problem_text) {
+      description = dbData.problem_text;
+    }
+  }
+  
   return {
     id: dbData.id,
     date: dbData.date,
@@ -16,9 +28,15 @@ function mapDbToBadcaseData(dbData: any): BadcaseData {
     category: dbData.category,
     expectedFixDate: dbData.expected_fix_date,
     status: dbData.status,
-    description: dbData.description,
+    priority: dbData.priority || 'P1', // 默认值为 P1
+    description: description || '',
+    problemDescription: dbData.problem_description,
+    problemText: dbData.problem_text,
     audioUrl: dbData.audio_url,
+    videoUrl: dbData.video_url,
+    modelSize: dbData.model_size,
     modelId: dbData.model_id,
+    remark: dbData.remark,
     createdAt: dbData.created_at ? new Date(dbData.created_at).toLocaleString('zh-CN') : '',
     updatedAt: dbData.updated_at ? new Date(dbData.updated_at).toLocaleString('zh-CN') : '',
   };
@@ -40,9 +58,15 @@ function mapBadcaseDataToDb(data: Partial<BadcaseData>): any {
   if (data.category !== undefined) dbData.category = data.category;
   if (data.expectedFixDate !== undefined) dbData.expected_fix_date = data.expectedFixDate;
   if (data.status !== undefined) dbData.status = data.status;
+  if (data.priority !== undefined) dbData.priority = data.priority;
   if (data.description !== undefined) dbData.description = data.description;
+  if (data.problemDescription !== undefined) dbData.problem_description = data.problemDescription;
+  if (data.problemText !== undefined) dbData.problem_text = data.problemText;
   if (data.audioUrl !== undefined) dbData.audio_url = data.audioUrl;
+  if (data.videoUrl !== undefined) dbData.video_url = data.videoUrl;
+  if (data.modelSize !== undefined) dbData.model_size = data.modelSize;
   if (data.modelId !== undefined) dbData.model_id = data.modelId;
+  if (data.remark !== undefined) dbData.remark = data.remark;
   
   return dbData;
 }
@@ -50,22 +74,22 @@ function mapBadcaseDataToDb(data: Partial<BadcaseData>): any {
 /**
  * 获取所有 Badcase 列表
  */
-export async function getAllBadcases(): Promise<BadcaseData[]> {
+export async function getAllBadcases(tableName: string = 'badcases'): Promise<BadcaseData[]> {
   try {
     const { data, error } = await supabase
-      .from('badcases')
+      .from(tableName)
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('❌ 获取 Badcase 列表失败:', error);
+      console.error(`❌ 获取 Badcase 列表失败 (${tableName}):`, error);
       throw error;
     }
 
-    console.log(`✅ 成功获取 ${data?.length || 0} 条 Badcase 数据`);
+    console.log(`✅ 成功获取 ${data?.length || 0} 条 Badcase 数据 (${tableName})`);
     return (data || []).map(mapDbToBadcaseData);
   } catch (error) {
-    console.error('❌ 获取 Badcase 列表异常:', error);
+    console.error(`❌ 获取 Badcase 列表异常 (${tableName}):`, error);
     throw error;
   }
 }
@@ -73,22 +97,22 @@ export async function getAllBadcases(): Promise<BadcaseData[]> {
 /**
  * 根据 ID 获取单个 Badcase
  */
-export async function getBadcaseById(id: string): Promise<BadcaseData | null> {
+export async function getBadcaseById(id: string, tableName: string = 'badcases'): Promise<BadcaseData | null> {
   try {
     const { data, error } = await supabase
-      .from('badcases')
+      .from(tableName)
       .select('*')
       .eq('id', id)
       .single();
 
     if (error) {
-      console.error('❌ 获取 Badcase 失败:', error);
+      console.error(`❌ 获取 Badcase 失败 (${tableName}):`, error);
       throw error;
     }
 
     return data ? mapDbToBadcaseData(data) : null;
   } catch (error) {
-    console.error('❌ 获取 Badcase 异常:', error);
+    console.error(`❌ 获取 Badcase 异常 (${tableName}):`, error);
     return null;
   }
 }
@@ -96,27 +120,27 @@ export async function getBadcaseById(id: string): Promise<BadcaseData | null> {
 /**
  * 创建新的 Badcase
  */
-export async function createBadcase(badcase: BadcaseData): Promise<BadcaseData> {
+export async function createBadcase(badcase: BadcaseData, tableName: string = 'badcases'): Promise<BadcaseData> {
   try {
     const dbData = mapBadcaseDataToDb(badcase);
     
     const { data, error } = await supabase
-      .from('badcases')
+      .from(tableName)
       .insert([dbData])
       .select()
       .single();
 
     if (error) {
-      console.error('❌ 创建 Badcase 失败:', error);
+      console.error(`❌ 创建 Badcase 失败 (${tableName}):`, error);
       console.error('❌ 错误详情:', JSON.stringify(error, null, 2));
       console.error('❌ 错误消息:', error.message);
       throw new Error(error.message || '创建失败');
     }
 
-    console.log('✅ Badcase 创建成功:', data.id);
+    console.log(`✅ Badcase 创建成功: ${data.id} (${tableName})`);
     return mapDbToBadcaseData(data);
   } catch (error: any) {
-    console.error('❌ 创建 Badcase 异常:', error);
+    console.error(`❌ 创建 Badcase 异常 (${tableName}):`, error);
     console.error('❌ 错误类型:', typeof error);
     console.error('❌ 错误内容:', JSON.stringify(error, null, 2));
     throw new Error(error?.message || error?.toString() || '创建 Badcase 失败');
@@ -126,28 +150,28 @@ export async function createBadcase(badcase: BadcaseData): Promise<BadcaseData> 
 /**
  * 更新 Badcase
  */
-export async function updateBadcase(id: string, updates: Partial<BadcaseData>): Promise<BadcaseData> {
+export async function updateBadcase(id: string, updates: Partial<BadcaseData>, tableName: string = 'badcases'): Promise<BadcaseData> {
   try {
     const dbUpdates = mapBadcaseDataToDb(updates);
     
     const { data, error } = await supabase
-      .from('badcases')
+      .from(tableName)
       .update(dbUpdates)
       .eq('id', id)
       .select()
       .single();
 
     if (error) {
-      console.error('❌ 更新 Badcase 失败:', error);
+      console.error(`❌ 更新 Badcase 失败 (${tableName}):`, error);
       console.error('❌ 错误详情:', JSON.stringify(error, null, 2));
       console.error('❌ 错误消息:', error.message);
       throw new Error(error.message || '更新失败');
     }
 
-    console.log('✅ Badcase 更新成功:', data.id);
+    console.log(`✅ Badcase 更新成功: ${data.id} (${tableName})`);
     return mapDbToBadcaseData(data);
   } catch (error: any) {
-    console.error('❌ 更新 Badcase 异常:', error);
+    console.error(`❌ 更新 Badcase 异常 (${tableName}):`, error);
     console.error('❌ 错误类型:', typeof error);
     console.error('❌ 错误内容:', JSON.stringify(error, null, 2));
     throw new Error(error?.message || error?.toString() || '更新 Badcase 失败');
@@ -157,27 +181,27 @@ export async function updateBadcase(id: string, updates: Partial<BadcaseData>): 
 /**
  * 删除 Badcase
  */
-export async function deleteBadcase(id: string): Promise<void> {
+export async function deleteBadcase(id: string, tableName: string = 'badcases'): Promise<void> {
   try {
-    console.log('🗑️ 开始删除 Badcase:', id);
+    console.log(`🗑️ 开始删除 Badcase: ${id} (${tableName})`);
     
     const { data, error } = await supabase
-      .from('badcases')
+      .from(tableName)
       .delete()
       .eq('id', id)
       .select();
 
     if (error) {
-      console.error('❌ 删除 Badcase 失败:', error);
+      console.error(`❌ 删除 Badcase 失败 (${tableName}):`, error);
       console.error('❌ 错误详情:', JSON.stringify(error, null, 2));
       console.error('❌ 错误消息:', error.message);
       throw new Error(error.message || '删除失败');
     }
 
-    console.log('✅ Badcase 删除成功:', id);
+    console.log(`✅ Badcase 删除成功: ${id} (${tableName})`);
     console.log('✅ 删除的数据:', data);
   } catch (error: any) {
-    console.error('❌ 删除 Badcase 异常:', error);
+    console.error(`❌ 删除 Badcase 异常 (${tableName}):`, error);
     console.error('❌ 错误类型:', typeof error);
     console.error('❌ 错误内容:', JSON.stringify(error, null, 2));
     throw new Error(error?.message || error?.toString() || '删除 Badcase 失败');
@@ -187,7 +211,7 @@ export async function deleteBadcase(id: string): Promise<void> {
 /**
  * 批量删除 Badcase
  */
-export async function deleteBadcasesByIds(ids: string[]): Promise<{
+export async function deleteBadcasesByIds(ids: string[], tableName: string = 'badcases'): Promise<{
   success: number;
   failed: number;
   errors: Array<{ id: string; error: any }>;
@@ -200,7 +224,7 @@ export async function deleteBadcasesByIds(ids: string[]): Promise<{
 
   for (const id of ids) {
     try {
-      await deleteBadcase(id);
+      await deleteBadcase(id, tableName);
       results.success++;
     } catch (error) {
       results.failed++;

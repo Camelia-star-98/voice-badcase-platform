@@ -10,9 +10,13 @@ export interface BadcaseData {
   category: string;
   expectedFixDate: string; // 期望修复时间
   status: 'pending' | 'algorithm_processing' | 'engineering_processing' | 'resolved' | 'processing';
-  description: string;
+  priority?: 'P00' | 'P0' | 'P1' | 'P2'; // 修复优先级：P00-立刻修复, P0-多天内修复, P1-多周内修复, P2-可先不修
+  description: string; // 问题描述（兼容旧数据）
+  problemDescription?: string; // 问题描述：出现的问题，以及期望的结果（Next方向）
+  problemText?: string; // 问题文本：出现问题的原始文本，至少是一条完整单句（Next方向）
   audioUrl?: string;
   videoUrl?: string; // 视频文件URL
+  modelSize?: 'large_model' | 'small_model'; // 大小模型：large_model（大模型）或 small_model（小模型）
   modelId?: string; // 问题模型ID
   remark?: string; // 备注信息
   createdAt: string;
@@ -46,5 +50,6 @@ export interface FilterOptions {
   category?: string;
   expectedFixDateRange?: [string, string];
   status?: string;
+  priority?: string; // 优先级筛选
 }
 

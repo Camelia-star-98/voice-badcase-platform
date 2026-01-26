@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { BadcaseData } from '../types';
 
-// 统计数据类型
+// 统计数据类型（动态优先级字段）
 export interface StatisticsData {
   // 总体统计
   totalCount: number;
@@ -16,12 +16,10 @@ export interface StatisticsData {
     percentage: number;
   }[];
   
-  // 按时间趋势统计（每周）
+  // 按时间趋势统计（每周）- 使用动态的优先级字段
   weeklyTrend: {
     week: string;
-    P0: number;
-    P1: number;
-    P2: number;
+    [key: string]: number | string;  // 动态优先级字段
     total: number;
   }[];
   
@@ -38,9 +36,12 @@ export interface StatisticsData {
     name: string;
     value: number;
   }[];
+  
+  // 实际使用的优先级列表（用于图表渲染）
+  priorityKeys: string[];
 }
 
-export const useStatistics = (badcaseList: BadcaseData[]): StatisticsData => {
+export const useStatistics = (badcaseList: BadcaseData[], business: string = 'next'): StatisticsData => {
   return useMemo(() => {
     // 1. 计算总体统计
     const totalCount = badcaseList.length;
@@ -76,44 +77,47 @@ export const useStatistics = (badcaseList: BadcaseData[]): StatisticsData => {
       }
     ].filter(item => item.value > 0); // 过滤掉值为0的项
 
-    // 3. 按优先级分类（从分类推断）
-    const getPriority = (category: string): string => {
-      const highPriority = ['读音错误', '音质问题'];
-      const mediumPriority = ['停顿不当', '重读不对'];
-      
-      if (highPriority.includes(category)) return 'P0';
-      if (mediumPriority.includes(category)) return 'P1';
-      return 'P2';
-    };
-
-    // 4. 按周统计（优先级趋势）
-    const weeklyMap = new Map<string, { P0: number; P1: number; P2: number }>();
+    // 3. 按周统计（动态优先级字段，根据业务方向）
+    // 确定实际使用的优先级列表
+    const priorityKeys = business === 'fengling' 
+      ? ['P0', 'P1', 'P2', '未填写']  // 风灵：无P00
+      : ['P00', 'P0', 'P1', 'P2', '未填写'];  // Next：有P00
+    
+    const weeklyMap = new Map<string, Record<string, number>>();
     
     badcaseList.forEach(item => {
       const date = new Date(item.date);
       const weekKey = formatWeek(date);
       
       if (!weeklyMap.has(weekKey)) {
-        weeklyMap.set(weekKey, { P0: 0, P1: 0, P2: 0 });
+        const initData: Record<string, number> = {};
+        priorityKeys.forEach(key => {
+          initData[key] = 0;
+        });
+        weeklyMap.set(weekKey, initData);
       }
       
-      const priority = getPriority(item.category);
       const weekData = weeklyMap.get(weekKey)!;
       
-      if (priority === 'P0') weekData.P0++;
-      else if (priority === 'P1') weekData.P1++;
-      else weekData.P2++;
+      // 根据实际优先级值统计
+      const priority = item.priority;
+      if (priority && priorityKeys.includes(priority)) {
+        weekData[priority]++;
+      } else {
+        weekData['未填写']++;
+      }
     });
 
     // 转换为数组并排序
     const weeklyTrend = Array.from(weeklyMap.entries())
-      .map(([week, data]) => ({
-        week,
-        P0: data.P0,
-        P1: data.P1,
-        P2: data.P2,
-        total: data.P0 + data.P1 + data.P2
-      }))
+      .map(([week, data]) => {
+        const total = priorityKeys.reduce((sum, key) => sum + (data[key] || 0), 0);
+        return {
+          week,
+          ...data,
+          total
+        };
+      })
       .sort((a, b) => a.week.localeCompare(b.week));
 
     // 5. 按状态的时间趋势
@@ -165,9 +169,10 @@ export const useStatistics = (badcaseList: BadcaseData[]): StatisticsData => {
       statusDistribution,
       weeklyTrend,
       statusTrend,
-      categoryDistribution
+      categoryDistribution,
+      priorityKeys  // 返回实际使用的优先级列表
     };
-  }, [badcaseList]);
+  }, [badcaseList, business]);
 };
 
 // 辅助函数：格式化周

@@ -1,24 +1,45 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Table, Card, Space, Tag, Input, Select, Button, Modal, message, Popconfirm, DatePicker } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { Dayjs } from 'dayjs';
 import { SearchOutlined, EyeOutlined, PlayCircleOutlined, LockOutlined, DeleteOutlined } from '@ant-design/icons';
 import { BadcaseData } from '../types';
-import { getSubjectList, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresFullTtsLessonId, requiresModelId } from '../config/subjectModelMapping';
+import { getSubjectList, getSubjectLabel, locationOptions, getLocationLabel, requiresCmsId, requiresModelId } from '../config/subjectModelMapping';
 import { useBadcase } from '../contexts/BadcaseContext';
 import { CATEGORY_OPTIONS } from '../constants/categories';
+import {
+  getPriorityOptions,
+  getPriorityColor as getBusinessPriorityColor,
+  getPriorityText as getBusinessPriorityText,
+  getCategoryLabel,
+  getAllCategoryOptions,
+  type BusinessType
+} from '../constants/businessConfig';
 import AudioPlayer from '../components/AudioPlayer';
+import BackButton from '../components/BackButton';
 import dayjs from 'dayjs';
 import './BadcaseListPage.css';
 
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 const CORRECT_PASSWORD = '1222';
 const AUTH_KEY = 'status_flow_auth';
 
 const StatusFlowPage = () => {
   const navigate = useNavigate();
-  const { badcaseList, updateBadcase, deleteBadcase } = useBadcase();
+  const [searchParams] = useSearchParams();
+  const { badcaseList, updateBadcase, deleteBadcase, currentBusiness, setCurrentBusiness } = useBadcase();
+  
+  // 从 URL 参数获取业务方向
+  useEffect(() => {
+    const business = searchParams.get('business') || 'next';
+    setCurrentBusiness(business);
+  }, [searchParams, setCurrentBusiness]);
+  
+  // 获取当前业务方向，用于返回按钮
+  const business = (searchParams.get('business') || 'next') as BusinessType;
   const [dataSource, setDataSource] = useState<BadcaseData[]>(badcaseList);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -26,6 +47,8 @@ const StatusFlowPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [audioPlayerVisible, setAudioPlayerVisible] = useState(false);
   const [currentAudioUrl, setCurrentAudioUrl] = useState('');
   const [currentRecordId, setCurrentRecordId] = useState('');
@@ -96,6 +119,33 @@ const StatusFlowPage = () => {
     }
   };
 
+  // 优先级相关函数 - 根据业务方向动态返回
+  const getPriorityColor = (priority?: string) => {
+    return getBusinessPriorityColor(priority, business);
+  };
+
+  const getPriorityText = (priority?: string) => {
+    return getBusinessPriorityText(priority, business);
+  };
+  
+  // 根据业务方向生成分类筛选器
+  const getCategoryFilters = () => {
+    const options = getAllCategoryOptions(business);
+    return options.map(opt => ({ text: opt.label, value: opt.value }));
+  };
+  
+  // 根据业务方向生成优先级筛选器
+  const getPriorityFilters = () => {
+    const options = getPriorityOptions(business);
+    const filters = options.map(opt => ({ text: opt.label, value: opt.value }));
+    return [...filters, { text: '未填写', value: '__none__' }];
+  };
+  
+  // 根据业务方向验证优先级值
+  const getValidPriorities = () => {
+    return getPriorityOptions(business).map(opt => opt.value);
+  };
+
   const columns: ColumnsType<BadcaseData> = [
     {
       title: 'ID',
@@ -109,15 +159,8 @@ const StatusFlowPage = () => {
       dataIndex: 'category',
       key: 'category',
       width: 150,
-      filters: [
-        { text: '读音错误', value: '读音错误' },
-        { text: '停顿不当', value: '停顿不当' },
-        { text: '重读不对', value: '重读不对' },
-        { text: '语速突变', value: '语速突变' },
-        { text: '音量突变', value: '音量突变' },
-        { text: '音质问题', value: '音质问题' },
-        { text: '其他', value: '其他' },
-      ],
+      render: (category: string) => getCategoryLabel(category, business),
+      filters: getCategoryFilters(),
       onFilter: (value, record) => record.category === value,
     },
     {
@@ -151,10 +194,48 @@ const StatusFlowPage = () => {
         { text: '算法处理中', value: 'algorithm_processing' },
         { text: '工程处理中', value: 'engineering_processing' },
         { text: '已解决', value: 'resolved' },
-        // 兼容旧数据
-        { text: '处理中', value: 'processing' },
       ],
       onFilter: (value, record) => record.status === value,
+    },
+    {
+      title: '优先级',
+      dataIndex: 'priority',
+      key: 'priority',
+      width: 180,
+      render: (priority?: string) => (
+        <Tag 
+          color={getPriorityColor(priority)}
+          style={{ 
+            margin: 0,
+            padding: '4px 12px',
+            fontSize: '13px',
+            lineHeight: '1.5',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {getPriorityText(priority)}
+        </Tag>
+      ),
+      filters: getPriorityFilters(),
+      onFilter: (value, record) => {
+        if (value === '__none__') {
+          // 未设置：排除所有有效的优先级值
+          const validPriorities = getValidPriorities();
+          return !record.priority || !validPriorities.includes(record.priority);
+        }
+        return record.priority === value;
+      },
+      sorter: (a, b) => {
+        // 动态生成优先级排序
+        const validPriorities = getValidPriorities();
+        const priorityOrder: Record<string, number> = {};
+        validPriorities.forEach((p, index) => {
+          priorityOrder[p] = validPriorities.length - index;
+        });
+        const aPriority = priorityOrder[a.priority || ''] || 0;
+        const bPriority = priorityOrder[b.priority || ''] || 0;
+        return bPriority - aPriority;
+      },
     },
     {
       title: '提交日期',
@@ -182,17 +263,11 @@ const StatusFlowPage = () => {
       },
     },
     {
-      title: '课节ID',
-      key: 'lessonId',
+      title: '相关课节ID',
+      dataIndex: 'cmsId',
+      key: 'cmsId',
       width: 150,
-      render: (_, record) => {
-        if (requiresFullTtsLessonId(record.location || '')) {
-          return record.fullTtsLessonId || '-';
-        } else if (requiresCmsId(record.location || '')) {
-          return record.cmsId || '-';
-        }
-        return '-';
-      },
+      render: (cmsId: string) => cmsId || '-',
     },
     {
       title: '问题提报人',
@@ -202,6 +277,22 @@ const StatusFlowPage = () => {
       render: (reporter: string) => reporter || '未填写',
     },
     {
+      title: () => <div style={{ whiteSpace: 'nowrap' }}>大小模型</div>,
+      dataIndex: 'modelSize',
+      key: 'modelSize',
+      width: 100,
+      render: (modelSize: string) => {
+        if (!modelSize) return '-';
+        const text = modelSize === 'large_model' ? '大模型' : '小模型';
+        return <span style={{ whiteSpace: 'nowrap' }}>{text}</span>;
+      },
+      filters: [
+        { text: '大模型', value: 'large_model' },
+        { text: '小模型', value: 'small_model' },
+      ],
+      onFilter: (value, record) => record.modelSize === value,
+    },
+    {
       title: '期望修复时间',
       dataIndex: 'expectedFixDate',
       key: 'expectedFixDate',
@@ -209,10 +300,16 @@ const StatusFlowPage = () => {
       sorter: (a, b) => new Date(a.expectedFixDate).getTime() - new Date(b.expectedFixDate).getTime(),
     },
     {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
+      title: business === 'next' ? '问题描述' : '描述',
+      dataIndex: business === 'next' ? 'problemDescription' : 'description',
+      key: business === 'next' ? 'problemDescription' : 'description',
       ellipsis: true,
+      render: (text: string, record: BadcaseData) => {
+        if (business === 'next') {
+          return record.problemDescription || record.description || '-';
+        }
+        return text || '-';
+      },
     },
     {
       title: '操作',
@@ -279,8 +376,18 @@ const StatusFlowPage = () => {
     
     setSaving(true);
     try {
+      // Next方向：确保description字段也更新（用于兼容）
+      const updateData: Partial<BadcaseData> = { ...editedRecord };
+      if (business === 'next') {
+        // 如果problemDescription或problemText有值，更新description字段
+        if (updateData.problemDescription || updateData.problemText) {
+          updateData.description = (updateData.problemDescription || '') + 
+            (updateData.problemText ? `\n\n问题文本：${updateData.problemText}` : '');
+        }
+      }
+      
       // 更新数据
-      await updateBadcase(editedRecord.id, editedRecord);
+      await updateBadcase(editedRecord.id, updateData);
       message.success('保存成功');
       setDetailModalVisible(false);
       setEditedRecord(null);
@@ -326,6 +433,30 @@ const StatusFlowPage = () => {
         filtered = filtered.filter((item) => item.subject === subjectFilter);
       }
 
+      if (priorityFilter !== 'all') {
+        filtered = filtered.filter((item) => {
+          if (priorityFilter === 'none') return !item.priority;
+          return item.priority === priorityFilter;
+        });
+      }
+
+      // 日期范围筛选
+      if (dateRange && dateRange[0] && dateRange[1]) {
+        const [startDate, endDate] = dateRange;
+        filtered = filtered.filter((item) => {
+          const itemDate = dayjs(item.date);
+          return (itemDate.isAfter(startDate.subtract(1, 'day'), 'day') || itemDate.isSame(startDate, 'day')) &&
+                 (itemDate.isBefore(endDate.add(1, 'day'), 'day') || itemDate.isSame(endDate, 'day'));
+        });
+      } else if (dateRange && dateRange[0]) {
+        // 只选择了起始日期
+        const startDate = dateRange[0];
+        filtered = filtered.filter((item) => {
+          const itemDate = dayjs(item.date);
+          return itemDate.isAfter(startDate.subtract(1, 'day'), 'day') || itemDate.isSame(startDate, 'day');
+        });
+      }
+
       // 按ID降序排列（新到旧）
       filtered.sort((a, b) => {
         const numA = parseInt(a.id.replace(/\D/g, ''), 10);
@@ -343,6 +474,8 @@ const StatusFlowPage = () => {
     setCategoryFilter('all');
     setStatusFilter('all');
     setSubjectFilter('all');
+    setPriorityFilter('all');
+    setDateRange(null);
     // 按ID降序排列（新到旧）
     const sortedList = [...badcaseList].sort((a, b) => {
       const numA = parseInt(a.id.replace(/\D/g, ''), 10);
@@ -393,6 +526,13 @@ const StatusFlowPage = () => {
 
   return (
     <div className="badcase-list-page">
+      <BackButton to={`/business-portal?business=${business}`} />
+      
+      {/* 页面标题 */}
+      <h2 style={{ marginBottom: 16, fontSize: 24, fontWeight: 'bold' }}>
+        {business === 'fengling' ? '风灵方向badcase跟进' : 'NEXT方向badcase跟进'}
+      </h2>
+      
       <Card className="filter-card">
         <Space wrap size="middle" style={{ width: '100%' }}>
           <Input
@@ -440,8 +580,27 @@ const StatusFlowPage = () => {
             <Option value="algorithm_processing">算法处理中</Option>
             <Option value="engineering_processing">工程处理中</Option>
             <Option value="resolved">已解决</Option>
-            <Option value="processing">处理中</Option>
           </Select>
+          <Select
+            value={priorityFilter}
+            onChange={setPriorityFilter}
+            style={{ width: 180 }}
+          >
+            <Option value="all">全部优先级</Option>
+            {getPriorityOptions(business).map(option => (
+              <Option key={option.value} value={option.value}>
+                {option.label}
+              </Option>
+            ))}
+            <Option value="none">未填写</Option>
+          </Select>
+          <RangePicker
+            value={dateRange}
+            onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null] | null)}
+            format="YYYY-MM-DD"
+            placeholder={['起始日期', '结束日期']}
+            style={{ width: 240 }}
+          />
           <Button type="primary" onClick={handleSearch}>
             搜索
           </Button>
@@ -544,26 +703,14 @@ const StatusFlowPage = () => {
                 </Select>
               </div>
 
-              {/* CMS课节ID */}
+              {/* 相关课节ID */}
               {requiresCmsId(editedRecord.location || '') && (
                 <div>
-                  <div style={{ marginBottom: 8, fontWeight: 500 }}>CMS课节ID</div>
+                  <div style={{ marginBottom: 8, fontWeight: 500 }}>相关课节ID</div>
                   <Input
                     value={editedRecord.cmsId}
                     onChange={(e) => handleFieldChange('cmsId', e.target.value)}
-                    placeholder="请输入CMS课节ID"
-                  />
-                </div>
-              )}
-
-              {/* 全程TTS课节ID */}
-              {requiresFullTtsLessonId(editedRecord.location || '') && (
-                <div>
-                  <div style={{ marginBottom: 8, fontWeight: 500 }}>全程TTS课节ID</div>
-                  <Input
-                    value={editedRecord.fullTtsLessonId}
-                    onChange={(e) => handleFieldChange('fullTtsLessonId', e.target.value)}
-                    placeholder="请输入全程TTS课节ID"
+                    placeholder="请输入相关课节ID"
                   />
                 </div>
               )}
@@ -578,16 +725,31 @@ const StatusFlowPage = () => {
                 />
               </div>
 
-              {/* 问题模型ID */}
+              {/* 大小模型和问题模型ID */}
               {requiresModelId(editedRecord.location || '') && (
-                <div>
-                  <div style={{ marginBottom: 8, fontWeight: 500 }}>问题模型ID</div>
-                  <Input
-                    value={editedRecord.modelId}
-                    onChange={(e) => handleFieldChange('modelId', e.target.value)}
-                    placeholder="请输入问题模型ID"
-                  />
-                </div>
+                <>
+                  <div>
+                    <div style={{ marginBottom: 8, fontWeight: 500 }}>大小模型</div>
+                    <Select
+                      value={editedRecord.modelSize}
+                      onChange={(value) => handleFieldChange('modelSize', value)}
+                      style={{ width: '100%' }}
+                      placeholder="请选择大小模型"
+                    >
+                      <Option value="large_model">大模型</Option>
+                      <Option value="small_model">小模型</Option>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <div style={{ marginBottom: 8, fontWeight: 500 }}>问题模型ID</div>
+                    <Input
+                      value={editedRecord.modelId}
+                      onChange={(e) => handleFieldChange('modelId', e.target.value)}
+                      placeholder="请输入问题模型ID"
+                    />
+                  </div>
+                </>
               )}
 
               {/* 分类 */}
@@ -640,16 +802,66 @@ const StatusFlowPage = () => {
                 </Select>
               </div>
 
-              {/* 描述 */}
+              {/* 优先级 */}
               <div>
-                <div style={{ marginBottom: 8, fontWeight: 500 }}>描述</div>
-                <Input.TextArea
-                  value={editedRecord.description}
-                  onChange={(e) => handleFieldChange('description', e.target.value)}
-                  placeholder="请输入问题描述"
-                  rows={4}
-                />
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>优先级</div>
+                <Select
+                  value={editedRecord.priority}
+                  onChange={(value) => handleFieldChange('priority', value)}
+                  style={{ width: '100%' }}
+                  allowClear
+                  placeholder="请选择优先级（可留空）"
+                >
+                  {getPriorityOptions(business).map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
               </div>
+
+              {/* 描述 */}
+              {business === 'next' ? (
+                <>
+                  <div>
+                    <div style={{ marginBottom: 8, fontWeight: 500 }}>问题文本</div>
+                    <Input.TextArea
+                      value={editedRecord.problemText || ''}
+                      onChange={(e) => handleFieldChange('problemText', e.target.value)}
+                      placeholder="出现问题的原始文本，至少是一条完整单句"
+                      rows={4}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ marginBottom: 8, fontWeight: 500 }}>问题描述</div>
+                    <Input.TextArea
+                      value={editedRecord.problemDescription || editedRecord.description || ''}
+                      onChange={(e) => handleFieldChange('problemDescription', e.target.value)}
+                      placeholder="出现的问题，以及期望的结果"
+                      rows={4}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ marginBottom: 8, fontWeight: 500 }}>备注</div>
+                    <Input.TextArea
+                      value={editedRecord.remark || ''}
+                      onChange={(e) => handleFieldChange('remark', e.target.value)}
+                      placeholder="可在此处备注复现反馈、跟进状态、流转状态、当前效果说明等"
+                      rows={4}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <div style={{ marginBottom: 8, fontWeight: 500 }}>描述</div>
+                  <Input.TextArea
+                    value={editedRecord.description}
+                    onChange={(e) => handleFieldChange('description', e.target.value)}
+                    placeholder="请输入问题描述"
+                    rows={4}
+                  />
+                </div>
+              )}
 
               {/* 创建时间和更新时间 - 只读 */}
               <div>

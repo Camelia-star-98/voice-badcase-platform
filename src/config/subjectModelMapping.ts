@@ -97,13 +97,14 @@ export const getLocationLabel = (locationValue: string): string => {
   return location ? location.label : locationValue;
 };
 
-// 判断是否需要CMS课节ID（互动类和做题类需要）
+// 判断是否需要CMS课节ID（互动类、做题类和全程TTS做课需要）
 export const requiresCmsId = (location: string): boolean => {
   return location === 'large_class_interactive' 
     || location === 'one_on_one_interactive' 
     || location === 'full_tts_interactive'
     || location === 'large_class_exercise'
-    || location === 'one_on_one_exercise';
+    || location === 'one_on_one_exercise'
+    || location === 'full_tts_lesson';
 };
 
 // 判断是否需要全程TTS课节ID（所有全程TTS相关都需要）

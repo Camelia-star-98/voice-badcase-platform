@@ -4,8 +4,131 @@
 
 .home-page h1 {
   color: #1890ff;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   text-align: center;
+  font-size: 32px;
+}
+
+.home-subtitle {
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+/* 业务方向卡片 */
+.business-card {
+  height: 280px;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.business-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.next-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+}
+
+.next-card:hover {
+  border-color: #764ba2;
+  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
+}
+
+.fengling-card {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border-color: #f093fb;
+}
+
+.fengling-card:hover {
+  border-color: #f5576c;
+  box-shadow: 0 12px 24px rgba(240, 147, 251, 0.4);
+}
+
+.business-card-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: white;
+}
+
+.business-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.business-info {
+  text-align: center;
+  width: 100%;
+}
+
+.business-info h2 {
+  color: white;
+  font-size: 28px;
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+.business-desc {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+
+.enter-btn {
+  min-width: 200px;
+  width: auto;
+  height: 45px;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 0 24px;
+  white-space: nowrap;
+}
+
+.next-btn {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  color: white;
+}
+
+.next-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+  transform: scale(1.05);
+}
+
+.fengling-btn {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  color: white;
+}
+
+.fengling-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+  transform: scale(1.05);
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 .home-page .ant-card {
