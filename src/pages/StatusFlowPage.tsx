@@ -267,9 +267,7 @@ const StatusFlowPage = () => {
       key: 'lessonId',
       width: 150,
       render: (_, record) => {
-        if (requiresFullTtsLessonId(record.location || '')) {
-          return record.fullTtsLessonId || '-';
-        } else if (requiresCmsId(record.location || '')) {
+        if (requiresCmsId(record.location || '')) {
           return record.cmsId || '-';
         }
         return '-';
@@ -715,16 +713,31 @@ const StatusFlowPage = () => {
                 />
               </div>
 
-              {/* 问题模型ID */}
+              {/* 大小模型和问题模型ID */}
               {requiresModelId(editedRecord.location || '') && (
-                <div>
-                  <div style={{ marginBottom: 8, fontWeight: 500 }}>问题模型ID</div>
-                  <Input
-                    value={editedRecord.modelId}
-                    onChange={(e) => handleFieldChange('modelId', e.target.value)}
-                    placeholder="请输入问题模型ID"
-                  />
-                </div>
+                <>
+                  <div>
+                    <div style={{ marginBottom: 8, fontWeight: 500 }}>大小模型</div>
+                    <Select
+                      value={editedRecord.modelSize}
+                      onChange={(value) => handleFieldChange('modelSize', value)}
+                      style={{ width: '100%' }}
+                      placeholder="请选择大小模型"
+                    >
+                      <Option value="large_model">大模型</Option>
+                      <Option value="small_model">小模型</Option>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <div style={{ marginBottom: 8, fontWeight: 500 }}>问题模型ID</div>
+                    <Input
+                      value={editedRecord.modelId}
+                      onChange={(e) => handleFieldChange('modelId', e.target.value)}
+                      placeholder="请输入问题模型ID"
+                    />
+                  </div>
+                </>
               )}
 
               {/* 分类 */}

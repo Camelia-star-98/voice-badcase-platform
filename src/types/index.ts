@@ -16,6 +16,7 @@ export interface BadcaseData {
   problemText?: string; // 问题文本：出现问题的原始文本，至少是一条完整单句（Next方向）
   audioUrl?: string;
   videoUrl?: string; // 视频文件URL
+  modelSize?: 'large_model' | 'small_model'; // 大小模型：large_model（大模型）或 small_model（小模型）
   modelId?: string; // 问题模型ID
   remark?: string; // 备注信息
   createdAt: string;

@@ -615,6 +615,7 @@ const BadcaseListPage = () => {
         remark: business === 'next' ? values.remark : undefined,
         audioUrl: audioUrl,
         videoUrl: videoUrl,
+        modelSize: requiresModelId(values.location) ? values.modelSize : undefined, // 只在需要时保存大小模型
         modelId: requiresModelId(values.location) ? values.modelId : undefined, // 只在需要时保存问题模型ID
         createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
         updatedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
@@ -872,6 +873,11 @@ const BadcaseListPage = () => {
             <Descriptions.Item label="问题提报人" span={2}>
               {selectedRecord.reporter || '未填写'}
             </Descriptions.Item>
+            {requiresModelId(selectedRecord.location || '') && selectedRecord.modelSize && (
+              <Descriptions.Item label="大小模型" span={2}>
+                {selectedRecord.modelSize === 'large_model' ? '大模型' : '小模型'}
+              </Descriptions.Item>
+            )}
             {requiresModelId(selectedRecord.location || '') && (
               <Descriptions.Item label="问题模型ID" span={2}>
                 {selectedRecord.modelId || '未填写'}
@@ -1024,24 +1030,37 @@ const BadcaseListPage = () => {
             <Input placeholder="请输入提报人姓名" />
           </Form.Item>
 
-          {/* 只在需要问题模型ID的位置显示 */}
+          {/* 只在需要问题模型ID的位置显示大小模型和问题模型ID */}
           {requiresModelId(selectedLocation) && (
-            <Form.Item
-              name="modelId"
-              label="问题模型ID"
-              rules={[{ required: true, message: '请选择问题模型ID' }]}
-            >
-              <Select 
-                placeholder={selectedSubject ? "请选择问题模型ID" : "请先选择学科"}
-                disabled={!selectedSubject}
+            <>
+              <Form.Item
+                name="modelSize"
+                label="大小模型"
+                rules={[{ required: true, message: '请选择大小模型' }]}
               >
-                {availableModels.map(model => (
-                  <Option key={model} value={model}>
-                    {model}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
+                <Select placeholder="请选择大小模型">
+                  <Option value="large_model">大模型</Option>
+                  <Option value="small_model">小模型</Option>
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                name="modelId"
+                label="问题模型ID"
+                rules={[{ required: true, message: '请选择问题模型ID' }]}
+              >
+                <Select 
+                  placeholder={selectedSubject ? "请选择问题模型ID" : "请先选择学科"}
+                  disabled={!selectedSubject}
+                >
+                  {availableModels.map(model => (
+                    <Option key={model} value={model}>
+                      {model}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </>
           )}
 
           {/* 风灵方向：先选主分类，再选子分类 */}

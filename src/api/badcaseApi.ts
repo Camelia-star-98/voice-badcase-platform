@@ -33,6 +33,8 @@ function mapDbToBadcaseData(dbData: any): BadcaseData {
     problemDescription: dbData.problem_description,
     problemText: dbData.problem_text,
     audioUrl: dbData.audio_url,
+    videoUrl: dbData.video_url,
+    modelSize: dbData.model_size,
     modelId: dbData.model_id,
     remark: dbData.remark,
     createdAt: dbData.created_at ? new Date(dbData.created_at).toLocaleString('zh-CN') : '',
@@ -61,6 +63,8 @@ function mapBadcaseDataToDb(data: Partial<BadcaseData>): any {
   if (data.problemDescription !== undefined) dbData.problem_description = data.problemDescription;
   if (data.problemText !== undefined) dbData.problem_text = data.problemText;
   if (data.audioUrl !== undefined) dbData.audio_url = data.audioUrl;
+  if (data.videoUrl !== undefined) dbData.video_url = data.videoUrl;
+  if (data.modelSize !== undefined) dbData.model_size = data.modelSize;
   if (data.modelId !== undefined) dbData.model_id = data.modelId;
   if (data.remark !== undefined) dbData.remark = data.remark;
   
