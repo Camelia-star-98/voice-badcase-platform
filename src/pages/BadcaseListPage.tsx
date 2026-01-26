@@ -471,8 +471,7 @@ const BadcaseListPage = () => {
         '问题文本': truncateText(record.problemText || ''),
         '问题链接': '', // 直接为空，不读取数据表
         '问题截图': '', // 直接为空，不读取数据表
-        '问题录屏': '', // 直接为空，不读取数据表
-        '问题音频': '', // 直接为空，不读取数据表
+        '问题录屏/音频': '', // 合并列，直接为空
         '问题描述': truncateText(record.problemDescription || record.description || ''),
         '修复优先级': priorityText,
         '反馈日期': record.date || '',
@@ -501,8 +500,7 @@ const BadcaseListPage = () => {
       { wch: 30 }, // 问题文本
       { wch: 20 }, // 问题链接
       { wch: 20 }, // 问题截图
-      { wch: 30 }, // 问题录屏
-      { wch: 30 }, // 问题音频
+      { wch: 30 }, // 问题录屏/音频（合并列）
       { wch: 40 }, // 问题描述
       { wch: 20 }, // 修复优先级
       { wch: 15 }, // 反馈日期
